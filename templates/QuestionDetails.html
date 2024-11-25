@@ -1,7 +1,7 @@
-{% extends "base.html" %}
+{% extends "layout.html" %}
 
 {% block title %}
-  Question Detail - {{ question.title }}
+  Question Detail - title
 {% endblock %}
 
 {% block style %}
@@ -13,70 +13,70 @@
 {% block content %}
   <div class="max-w-6xl mx-auto">
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-      <h1 class="text-2xl font-bold mb-4">{{ question.title }}</h1>
+      <h1 class="text-2xl font-bold mb-4">title</h1>
       <div class="flex items-center text-sm text-gray-500 mb-6">
-        <span>Asked {{ question.ask_time }} ago</span>
+        <span>Asked time ago</span>
         <span class="mx-2">•</span>
-        <span>Viewed {{ question.view_count }} times</span>
+        <span>Viewed no of times</span>
         <span class="mx-2">•</span>
         <img
-          src="{{ question.user.avatar_url }}"
-          alt="{{ question.user.name }}"
+          src=""
+          alt=""
           class="w-6 h-6 rounded-full mr-2"
         />
-        <span>{{ question.user.name }}</span>
+        <span>username</span>
       </div>
 
       <div class="flex gap-6">
         <div class="flex flex-col items-center space-y-2">
           <ArrowUp class="h-8 w-8 text-gray-400 hover:text-orange-500 cursor-pointer" />
-          <span class="font-semibold text-xl">{{ question.upvotes }}</span>
+          <span class="font-semibold text-xl">uvotes</span>
           <ArrowDown class="h-8 w-8 text-gray-400 hover:text-orange-500 cursor-pointer" />
         </div>
 
         <div class="flex-1">
           <div class="prose max-w-none">
-            <p>{{ question.body }}</p>
+            <p>question body</p>
           </div>
 
           <div class="mt-6 flex items-center space-x-4">
-            {% for tag in question.tags %}
-              <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">{{ tag }}</span>
-            {% endfor %}
+            for tags in tag
+              <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Tags</span>
+            end for
           </div>
         </div>
       </div>
     </div>
 
     <div class="mb-8">
-      <h2 class="text-xl font-bold mb-4">{{ question.answer_count }} Answers</h2>
+      <h2 class="text-xl font-bold mb-4">answer count Answers</h2>
 
-      {% for answer in question.answers %}
+      for answer in ans
         <div class="bg-white rounded-lg shadow-md p-6 mb-4">
           <div class="flex gap-6">
             <div class="flex flex-col items-center space-y-2">
               <ArrowUp class="h-8 w-8 text-gray-400 hover:text-orange-500 cursor-pointer" />
-              <span class="font-semibold text-xl">{{ answer.upvotes }}</span>
+              <span class="font-semibold text-xl">upvotes</span>
               <ArrowDown class="h-8 w-8 text-gray-400 hover:text-orange-500 cursor-pointer" />
             </div>
 
             <div class="flex-1">
               <div class="prose max-w-none">
-                <p>{{ answer.body }}</p>
+                <p>ans body</p>
               </div>
 
               <div class="mt-4 flex items-center justify-end text-sm text-gray-500">
                 <img
-                  src="{{ answer.user.avatar_url }}"
-                  alt="{{ answer.user.name }}"
+                  src="url"
+                  alt="ans"
                   class="w-6 h-6 rounded-full mr-2"
                 />
-                <span>answered {{ answer.time_ago }} ago by {{ answer.user.name }}</span>
+                <span>answered  answer.time_ago  ago by  answer.user.name </span>
               </div>
             </div>
           </div>
         </div>
-      {% endfor %}
+      end for
 
       <div class="bg-white rounded-lg shadow-md p-6">
         <div class="flex items-center mb-4">
@@ -117,7 +117,7 @@
 
     <div class="bg-white rounded-lg shadow-md p-6">
       <h3 class="text-xl font-bold mb-4">Your Answer</h3>
-      <form action="{{ url_for('post_answer', question_id=question.id) }}" method="POST">
+      <form action=" url_for('post_answer', question_id=question.id) " method="POST">
         <textarea
           name="answer_body"
           class="w-full h-48 p-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

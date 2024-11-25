@@ -227,12 +227,12 @@ def questions():
     
 
     else: # Get all questions
-        questions = questions.query.all()
-        for question in questions:
-            if question.offical_answer == "":
-                answers_list = answers.query.filter_by(questionid=question.questionid).sort_by(answers.upvotes.desc(), answers.downvotes.asc()).all()
-                question.answers = [answer.serializer() for answer in answers_list]
-        return render_template('QuestionDetails.html', questions=questions, nav="questions")
+        # questions = questions.query.all()
+        # for question in questions:
+        #     if question.offical_answer == "":
+        #         answers_list = answers.query.filter_by(questionid=question.questionid).sort_by(answers.upvotes.desc(), answers.downvotes.asc()).all()
+        #         question.answers = [answer.serializer() for answer in answers_list]
+        return render_template('QuestionDetails.html')
 
 
 @app.route('/answers', methods=['GET', 'POST', 'DELETE', 'PUT'])
