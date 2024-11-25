@@ -5,6 +5,9 @@ from app import app
 from functools import wraps
 from models import db, User, Profile, Questions, answers, plus_ones
 import random
+import ollama
+import re
+import humanize
 
 
 def auth_required(func):
@@ -158,9 +161,6 @@ def questions():
 
     if request.method=='POST': # Add the question
         question=request.form.get('question')
-        if question is None:
-            flash('Please fill the required fields')
-            return redirect(url_for('questions'))
         question=questions(question=question,userid=session['user_id'].first(), plus_one=0, official_answer="")
         db.session.add(question)
         db.session.commit()
@@ -199,6 +199,39 @@ def questions():
         print(question_whole)
         return render_template('questions.html',questions=question_whole)
     
+@app.route('/questions_details/<int:question_id>', methods=['GET', 'POST'])
+def questions_details(question_id):
+
+    if request.method=='POST': # Add the question
+        question=request.form.get('question')
+        question=questions(question=question,userid=session['user_id'].first(), plus_one=0, official_answer="")
+        db.session.add(question)
+        db.session.commit()
+        flash(['Question added successfully','success'])
+        return redirect(url_for('questions'))
+            
+
+    else: # Get all questions
+        questions=Questions.query.filter_by(questionid=question_id).first()
+        print(questions.serializer())
+        
+        timestamp = questions.date
+
+        # Get the current time
+        now = datetime.datetime.now()
+
+        # Calculate the relative time
+        relative_time = humanize.naturaltime(now - timestamp)
+        user_question=User.query.filter_by(userid=questions.userid).first()
+
+        answer_all=answers.query.filter_by(questionid=question_id).all()
+        answers_list=[]
+        for answer in answer_all:
+            answers_list.append(answer.serializer())
+        print(answers_list)
+
+        return render_template('QuestionDetails.html',question=questions.serializer(),relative_time=relative_time,user_question=user_question,answers=answers_list)
+
 
 @auth_required
 @app.route('/ask_question', methods=["GET", "POST"])
@@ -209,6 +242,17 @@ def ask_question():
         body = request.form.get('body')
         tags = request.form.get('tags')
 
+        question=request.form.get('question')
+        prompt = "Answer the given question: " + title + body + "from" + tags + ' in format {"question": "The same question", "answer": "Your answer"} the answer should be in the format {"question": "The same question", "answer": "Your answer"}'
+        response = ollama.generate(model='llama3.2', prompt=prompt)
+        print(response["response"])
+        
+        # Parse json
+        regex = r'{"question": "(.*?)", "answer": "(.*?)"}'
+        matches = re.findall(regex, response["response"])
+        print(matches)
+        answer = matches[0]
+
         # Basic validation to check if all fields are filled
         if not title or not body or not tags:
             flash('Please fill in all fields.', 'error')
@@ -217,30 +261,43 @@ def ask_question():
         # Optional: Process and store tags (you may choose to split them by commas or space)
         tag_list = tags.split()
         tag_objects = []
+        for tag in tag_list:
+            tag_objects.append(tag)
         
+        random_id = random.randint(1000, 9999)
 
         # Create and save the question
         new_question = Questions(
+            questionid = random_id,
             question_title=title,
             question_detail=body,
             date=datetime.datetime.now(),
-            # Assuming you have a user object from the session or passed in
-            userid=session.get('user_id'),  # You can adjust this based on your authentication
+            userid=session.get('user_id'),
+            tags =tag_objects
+        )
 
+        new_answer = answers(
+            answer=answer[1],
+            questionid = random_id,
+            userid=session.get('user_id'),
+            upvotes=0,
+            downvotes=0,
+            marked_as_official=False,
+            date=datetime.datetime.now()
         )
 
         db.session.add(new_question)
+        db.session.add(new_answer)
+
         db.session.commit()
 
         flash(['Your question has been posted successfully!', 'success'])
         return redirect(url_for('ask_question'))  # Redirect to the same page or another page
-
-    return render_template('AskQuestion.html') 
-
+    return render_template('AskQuestion.html')
 
 
 @app.route('/answers', methods=['GET', 'POST', 'DELETE', 'PUT'])
-def answers():
+def answers_route():
     
         if request.method=='POST': # Add the answer
             question_id=request.form.get('question_id')

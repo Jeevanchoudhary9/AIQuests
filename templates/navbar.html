@@ -27,18 +27,15 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    % if not False %
                         <a href="{{ url_for('login') }}" class="px-4 py-2 text-gray-700 hover:text-gray-900">
                             Log in
                         </a>
                         <a href="{{ url_for('register') }}" class="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600">
                             Sign up
                         </a>
-                    % else %
                         <a href="{{ url_for('questions') }}" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                             Questions
                         </a>
-                    % endif %
                 </div>
             </div>
         </div>

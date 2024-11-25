@@ -1,6 +1,8 @@
 from app import app
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
+import datetime
+import humanize
 
 db=SQLAlchemy(app)
 
@@ -41,6 +43,7 @@ class Questions(db.Model):
     official_answer = db.Column(db.String(200), nullable=True)
     date = db.Column(db.DateTime, nullable=False)
     ai_answer = db.Column(db.Boolean, nullable=False,default=False)
+    tags = db.Column(db.JSON, nullable=False)
     
     def serializer(self):
         return {
@@ -49,7 +52,10 @@ class Questions(db.Model):
             'question_detail': self.question_detail,
             'plus_one': self.plus_one,
             'userid': self.userid,
-            'official_answer': self.official_answer
+            'official_answer': self.official_answer,
+            'date': self.date,
+            'ai_answer': self.ai_answer,
+            'tags': self.tags
         }
 
 class plus_ones(db.Model):
@@ -84,7 +90,10 @@ class answers(db.Model):
             'downvotes': self.downvotes,
             'questionid': self.questionid,
             'userid': self.userid,
-            'marked_as_official': self.marked_as_official
+            'marked_as_official': self.marked_as_official,
+            'date': self.date,
+            'uname': User.query.filter_by(userid=self.userid).first().uname,
+            'relative_time' : humanize.naturaltime(datetime.datetime.now() - self.date)
         }
     
 class votes(db.Model):
