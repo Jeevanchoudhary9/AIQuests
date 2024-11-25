@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from sqlalchemy import distinct
 from app import app
 from functools import wraps
-from models import db, User, Profile, questions, answers, plus_ones
+from models import db, User, Profile, Questions, answers, plus_ones
 import random
 
 
@@ -93,7 +93,7 @@ def login():
 
 @app.route('/login', methods=["POST"])
 def login_post():
-    username=request.form.get('username')
+    username=request.form.get('email')
     password=request.form.get('password')
 
     if username=='' or password=='':
@@ -101,6 +101,7 @@ def login_post():
         return redirect(url_for('login'))
     
     user=User.query.filter_by(uname=username).first()
+    print(username,password)
     if not user:
         flash('Please check your username and try again.')
         return redirect(url_for('login'))
@@ -109,45 +110,8 @@ def login_post():
         return redirect(url_for('login'))
     #after successful login   
     session['user_id']=user.userid
-    return redirect(url_for('homepage'))
+    return redirect(url_for('index'))
 
-
-@app.route('/login_man')
-def login_man():
-    return render_template('login_man.html')
-
-
-@app.route('/login_man', methods=["POST"])
-def login_man_post():
-    username=request.form.get('username')
-    password=request.form.get('password')
-
-    if username is None or password is None:
-        flash('Please fill the required fields')
-        return redirect(url_for('login_man'))
-    
-    user=User.query.filter_by(uname=username).first()
-    
-    if not user or User.query.filter_by(uname=username).first().role!="manager":
-        flash('Please check your username and try again or go to customer login.')
-        return redirect(url_for('login_man'))
-    if not user.check_password(password):
-        flash('Please check your password and try again.')
-        return redirect(url_for('login_man'))
-    if user and User.query.filter_by(uname=username).first().role=="manager":
-        #after successful login   
-        session['user_id']=user.userid
-        return redirect(url_for('manager_index'))
-    
-    return redirect(url_for('login_man'))
-
-
-@app.route('/manager_index')
-@auth_required
-@manager_required
-def manager_index():
-    user=User.query.filter_by(userid=session['user_id']).first()
-    return render_template('manager_index.html',user=user,nav="dashboard")
 
 
 @app.route('/register',methods=["GET"])
@@ -157,13 +121,11 @@ def register():
 
 @app.route('/register',methods=["POST"])
 def register_post():
-    username=request.form.get('username')
-    password=request.form.get('password')
-    firstname=request.form.get('firstname')
-    lastname=request.form.get('lastname')
+    firstname=request.form.get('first_name')
+    lastname=request.form.get('last_name')
     email=request.form.get('email')
-    phone=request.form.get('phone')
-    address=request.form.get('address')
+    password=request.form.get('password')
+    username=email
 
     if username is None or password is None or email is None :
         flash('Please fill the required fields')
@@ -176,10 +138,10 @@ def register_post():
     def user(username, password, role="customer",Profileid=None):
         return User(uname=username,password=password,profileid=Profileid,role=role)
     
-    profile=Profile(firstname=firstname,lastname=lastname,email=email,phone=phone,address=address)
+    profile=Profile(firstname=firstname,lastname=lastname,email=email)
     db.session.add(profile)
     db.session.commit()
-    pid=Profile.query.filter_by(firstname=firstname,lastname=lastname,email=email,phone=phone,address=address).first().profileid
+    pid=Profile.query.filter_by(firstname=firstname,lastname=lastname,email=email).first().profileid
     user=user(username,password,Profileid=pid)
     db.session.add(user)
     db.session.commit()
@@ -230,12 +192,49 @@ def questions():
     
 
     else: # Get all questions
-        # questions = questions.query.all()
-        # for question in questions:
-        #     if question.offical_answer == "":
-        #         answers_list = answers.query.filter_by(questionid=question.questionid).sort_by(answers.upvotes.desc(), answers.downvotes.asc()).all()
-        #         question.answers = [answer.serializer() for answer in answers_list]
+        questions = Questions.query.all()
+        serialized_questions = [question.serialize() for question in questions]
+        print(serialized_questions)
         return render_template('questions.html')
+    
+
+@auth_required
+@app.route('/ask_question', methods=["GET", "POST"])
+def ask_question():
+    if request.method == "POST":
+        # Get form data
+        title = request.form.get('title')
+        body = request.form.get('body')
+        tags = request.form.get('tags')
+
+        # Basic validation to check if all fields are filled
+        if not title or not body or not tags:
+            flash('Please fill in all fields.', 'error')
+            return redirect(url_for('ask_question'))
+        
+        # Optional: Process and store tags (you may choose to split them by commas or space)
+        tag_list = tags.split()
+        tag_objects = []
+        
+
+        # Create and save the question
+        new_question = Questions(
+            question_title=title,
+            question_detail=body,
+            date=datetime.datetime.now(),
+            # Assuming you have a user object from the session or passed in
+            userid=session.get('user_id'),  # You can adjust this based on your authentication
+
+        )
+
+        db.session.add(new_question)
+        db.session.commit()
+
+        flash(['Your question has been posted successfully!', 'success'])
+        return redirect(url_for('ask_question'))  # Redirect to the same page or another page
+
+    return render_template('AskQuestion.html') 
+
 
 
 @app.route('/answers', methods=['GET', 'POST', 'DELETE', 'PUT'])

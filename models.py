@@ -7,7 +7,7 @@ db=SQLAlchemy(app)
 class User(db.Model):
     __TableName__ = 'user'
     userid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
-    uname = db.Column(db.String(20), nullable=False, unique=True)
+    uname = db.Column(db.String(50), nullable=False, unique=True)
     passhash = db.Column(db.String(1024), nullable=False)
     profileid = db.Column(db.String(1024), nullable=False)
     role = db.Column(db.String(10), nullable=False)
@@ -29,29 +29,29 @@ class Profile(db.Model):
     firstname = db.Column(db.String(20), nullable=False)
     lastname = db.Column(db.String(20))
     email = db.Column(db.String(50), nullable=False, unique=True)
-    phone = db.Column(db.String(20))
-    address = db.Column(db.String(100))
     #sessionid = db.Column(db.String(20), db.ForeignKey('session.sid'), nullable=True)
 
-class questions(db.Model):
-    __tablename__ = 'questions'
+class Questions(db.Model):
+    __tablename__ = 'Questions'
     questionid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
-    question = db.Column(db.String(200), nullable=False)
-    plus_one = db.Column(db.Integer, nullable=False)
+    question_title = db.Column(db.String(50), nullable=False)
+    question_detail = db.Column(db.String(200), nullable=False)
+    plus_one = db.Column(db.Integer, nullable=False,default=0)
     userid = db.Column(db.Integer, db.ForeignKey('user.userid'), nullable=False)
     official_answer = db.Column(db.String(200), nullable=True)
     date = db.Column(db.DateTime, nullable=False)
 
     def __repr__(self):
-        return f'<Question {self.questionid}>'
+        return f'<Questions {self.questionid}>'
     
     def __str__(self):
-        return f'{self.question}'
+        return f'{self.question_title}'
     
     def serializer(self):
         return {
             'questionid': self.questionid,
-            'question': self.question,
+            'question_title': self.question_title,
+            'question_detail': self.question_detail,
             'plus_one': self.plus_one,
             'userid': self.userid,
             'official_answer': self.official_answer
@@ -60,7 +60,7 @@ class questions(db.Model):
 class plus_ones(db.Model):
     __tablename__ = 'plus_ones'
     plusoneid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
-    questionid = db.Column(db.Integer, db.ForeignKey('questions.questionid'), nullable=False)
+    questionid = db.Column(db.Integer, db.ForeignKey('Questions.questionid'), nullable=False)
     userid = db.Column(db.Integer, db.ForeignKey('user.userid'), nullable=False)
     date = db.Column(db.DateTime, nullable=False)
 
@@ -70,7 +70,7 @@ class answers(db.Model):
     answer = db.Column(db.String(200), nullable=False)
     upvotes = db.Column(db.Integer, nullable=False)
     downvotes = db.Column(db.Integer, nullable=False)
-    questionid = db.Column(db.Integer, db.ForeignKey('questions.questionid'), nullable=False)
+    questionid = db.Column(db.Integer, db.ForeignKey('Questions.questionid'), nullable=False)
     userid = db.Column(db.Integer, db.ForeignKey('user.userid'), nullable=False)
     marked_as_official = db.Column(db.Boolean, nullable=False)
     date = db.Column(db.DateTime, nullable=False)
@@ -96,7 +96,7 @@ class votes(db.Model):
     __tablename__ = 'votes'
     voteid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
     vote = db.Column(db.String(10), nullable=False)
-    questionid = db.Column(db.Integer, db.ForeignKey('questions.questionid'), nullable=False)
+    questionid = db.Column(db.Integer, db.ForeignKey('Questions.questionid'), nullable=False)
     answerid = db.Column(db.Integer, db.ForeignKey('answers.answerid'), nullable=False)
     userid = db.Column(db.Integer, db.ForeignKey('user.userid'), nullable=False)
     date = db.Column(db.DateTime, nullable=False)
@@ -122,7 +122,7 @@ with app.app_context():
     admin=User.query.filter_by(uname='admin').first()
     if not admin:
         admin=User(uname='admin', password='admin', role='manager', profileid='1')
-        admin_profile=Profile(profileid='1', firstname='admin', lastname='admin',email='admin',phone='admin',address='admin')
+        admin_profile=Profile(profileid='1', firstname='admin', lastname='admin',email='admin@admin.com')
         db.session.add(admin)
         db.session.add(admin_profile)
         db.session.commit()
