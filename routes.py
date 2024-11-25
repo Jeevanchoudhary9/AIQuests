@@ -192,10 +192,12 @@ def questions():
     
 
     else: # Get all questions
+        question_whole=[]
         questions = Questions.query.all()
-        serialized_questions = [question.serialize() for question in questions]
-        print(serialized_questions)
-        return render_template('questions.html')
+        for question in questions:
+            question_whole.append(question.serializer())
+        print(question_whole)
+        return render_template('questions.html',questions=question_whole)
     
 
 @auth_required

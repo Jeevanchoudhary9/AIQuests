@@ -40,12 +40,7 @@ class Questions(db.Model):
     userid = db.Column(db.Integer, db.ForeignKey('user.userid'), nullable=False)
     official_answer = db.Column(db.String(200), nullable=True)
     date = db.Column(db.DateTime, nullable=False)
-
-    def __repr__(self):
-        return f'<Questions {self.questionid}>'
-    
-    def __str__(self):
-        return f'{self.question_title}'
+    ai_answer = db.Column(db.Boolean, nullable=False,default=False)
     
     def serializer(self):
         return {

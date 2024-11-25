@@ -17,7 +17,7 @@
     </div>
 
     <div class="bg-white rounded-lg shadow-md">
-      % for question in questions %
+      {% for question in questions %}
         <div
           class="border-b last:border-0 p-6 hover:bg-gray-50 transition"
         >
@@ -27,7 +27,7 @@
                 <span class="h-6 w-6 text-gray-400 cursor-pointer">
                   &#8593;
                 </span>
-                <span class="font-semibold text-lg"> question.upvotes </span>
+                <span class="font-semibold text-lg"> {{question.plus_one}}</span>
               </div>
               <div class="flex items-center space-x-1">
                 <span class="h-5 w-5 text-gray-400">&#128172;</span>
@@ -40,10 +40,10 @@
                 href=" url_for('question_detail', question_id=question.id) "
                 class="text-xl text-blue-600 hover:text-blue-800 font-semibold mb-2 block"
               >
-                 question.title 
+                 {{question.question_title }}
               </a>
               <p class="text-gray-600 mb-4">
-                 question.short_description 
+                 {{question.question_detail }}
               </p>
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
@@ -72,7 +72,7 @@
             % endif %
           </div>
         </div>
-      % endfor %
+      {% endfor %}
     </div>
   </div>
 {% endblock %}
