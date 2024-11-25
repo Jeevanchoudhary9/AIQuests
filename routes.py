@@ -187,6 +187,9 @@ def register_post():
     
     return redirect(url_for('login'))
 
+@app.route('/questiondetail',methods=['GET'])
+def ques():
+    return render_template('QuestionDetails.html') 
 
 @app.route('/questions', methods=['GET', 'POST', 'DELETE', 'PUT'])
 def questions():
@@ -232,7 +235,7 @@ def questions():
         #     if question.offical_answer == "":
         #         answers_list = answers.query.filter_by(questionid=question.questionid).sort_by(answers.upvotes.desc(), answers.downvotes.asc()).all()
         #         question.answers = [answer.serializer() for answer in answers_list]
-        return render_template('QuestionDetails.html')
+        return render_template('questions.html')
 
 
 @app.route('/answers', methods=['GET', 'POST', 'DELETE', 'PUT'])
