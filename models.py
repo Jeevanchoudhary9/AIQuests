@@ -40,7 +40,7 @@ class Questions(db.Model):
     question_detail = db.Column(db.String(200), nullable=False)
     plus_one = db.Column(db.Integer, nullable=False,default=0)
     userid = db.Column(db.Integer, db.ForeignKey('user.userid'), nullable=False)
-    official_answer = db.Column(db.String(200), nullable=True)
+    official_answer = db.Column(db.Integer, db.ForeignKey('answers.answerid'), nullable=False)
     date = db.Column(db.DateTime, nullable=False)
     ai_answer = db.Column(db.Boolean, nullable=False,default=False)
     tags = db.Column(db.JSON, nullable=False)
@@ -52,10 +52,13 @@ class Questions(db.Model):
             'question_detail': self.question_detail,
             'plus_one': self.plus_one,
             'userid': self.userid,
+            'email':User.query.filter_by(userid=self.userid).first().uname,
             'official_answer': self.official_answer,
             'date': self.date,
             'ai_answer': self.ai_answer,
-            'tags': self.tags
+            'tags': self.tags,
+            'no_of_ans': answers.query.filter_by(questionid=self.questionid).count(),
+            'relative_time' : humanize.naturaltime(datetime.datetime.now() - self.date)
         }
 
 class plus_ones(db.Model):
@@ -73,7 +76,7 @@ class answers(db.Model):
     downvotes = db.Column(db.Integer, nullable=False)
     questionid = db.Column(db.Integer, db.ForeignKey('Questions.questionid'), nullable=False)
     userid = db.Column(db.Integer, db.ForeignKey('user.userid'), nullable=False)
-    marked_as_official = db.Column(db.Boolean, nullable=False)
+    marked_as_official = db.Column(db.Boolean, nullable=False, default=False)
     date = db.Column(db.DateTime, nullable=False)
 
     def __repr__(self):
@@ -92,7 +95,7 @@ class answers(db.Model):
             'userid': self.userid,
             'marked_as_official': self.marked_as_official,
             'date': self.date,
-            'uname': User.query.filter_by(userid=self.userid).first().uname,
+            'uname': User.query.filter_by(userid=self.userid).first(),
             'relative_time' : humanize.naturaltime(datetime.datetime.now() - self.date)
         }
     
@@ -118,6 +121,29 @@ class votes(db.Model):
             'questionid': self.questionid,
             'answerid': self.answerid,
             'userid': self.userid
+        }
+    
+class OfficialAnswer(db.Model):
+    __tablename__ = 'officialanswer'
+    officialanswerid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
+    questionid = db.Column(db.Integer, db.ForeignKey('Questions.questionid'))
+    question_text = db.Column(db.Text, nullable=False)
+    answer_text = db.Column(db.Text, nullable=False)
+    embedding = db.Column(db.Text, nullable=False)
+
+    def __repr__(self):
+        return f'<Official Answer {self.officialanswerid}>'
+
+    def __str__(self):
+        return f'{self.answer_text}'
+    
+    def serializer(self):
+        return {
+            'officialanswerid': self.officialanswerid,
+            'questionid': self.questionid,
+            'question_text': self.question_text,
+            'answer_text': self.answer_text,
+            'embedding': self.embedding
         }
 
 with app.app_context():

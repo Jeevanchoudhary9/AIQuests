@@ -3,11 +3,26 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from sqlalchemy import distinct
 from app import app
 from functools import wraps
-from models import db, User, Profile, Questions, answers, plus_ones
+from models import db, User, Profile, Questions, answers, plus_ones, OfficialAnswer
 import random
 import ollama
 import re
 import humanize
+from transformers import BertTokenizer, BertModel
+import torch
+
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+model = BertModel.from_pretrained('bert-base-uncased')
+
+def get_bert_embedding(text):
+    """
+    Generate BERT embedding for the given text.
+    """
+    inputs = bert_tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
+    outputs = bert_model(**inputs)
+    # Use the mean of the last hidden state as the embedding
+    embedding = outputs.last_hidden_state.mean(dim=1).detach().numpy()
+    return embedding
 
 
 def auth_required(func):
@@ -47,6 +62,7 @@ def index():
         {'id': 2, 'title': 'Best practices for React state management?', 'short_description': 'Looking for suggestions on managing state...', 'time_ago': '1 day', 'answer_count': 3, 'asker_name': 'Jane Smith'},
         {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
     ]
+
 
     return render_template('home.html', questions=questions)
     # return render_template('home.html')
@@ -202,12 +218,42 @@ def questions():
 @app.route('/questions_details/<int:question_id>', methods=['GET', 'POST'])
 def questions_details(question_id):
 
-    if request.method=='POST': # Add the question
-        question=request.form.get('question')
-        question=questions(question=question,userid=session['user_id'].first(), plus_one=0, official_answer="")
-        db.session.add(question)
+    if request.method=='POST':
+        answer=request.form.get('answer_body')
+        isAnsOfficial = True if request.form.get('official_status') == "yes" else False
+        
+        if answer is None:
+            flash('Please fill the required fields')
+            return redirect(url_for('questions'))
+        
+        newAnswer=answers(answer=answer, questionid=question_id, userid=session['user_id'],
+                       upvotes=0, downvotes=0, marked_as_official=isAnsOfficial, date=datetime.datetime.now())
+        db.session.add(newAnswer)
         db.session.commit()
-        flash(['Question added successfully','success'])
+
+        if isAnsOfficial:
+            question = Questions.query.filter_by(questionid=question_id).first()
+            question_text = question.question_title + ' ' + question.question_detail
+            question.official_answer = answers.query.filter_by(questionid=question_id, marked_as_official=True).first().answerid
+
+            # Generate BERT embedding for the question text
+            inputs = tokenizer(question_text, return_tensors='pt', truncation=True, padding=True)
+            with torch.no_grad():
+                outputs = model(**inputs)
+                embedding = outputs.last_hidden_state.mean(dim=1).squeeze().tolist()
+
+            # Create the official answer entry
+            official_entry = OfficialAnswer(
+                questionid=question_id,
+                embedding=str(embedding),
+                question_text=question_text,
+                answer_text=answer
+            )
+            db.session.add(official_entry)
+            db.session.commit()
+
+
+        flash(['Answer added successfully','success'])
         return redirect(url_for('questions'))
             
 
@@ -236,6 +282,7 @@ def questions_details(question_id):
 @auth_required
 @app.route('/ask_question', methods=["GET", "POST"])
 def ask_question():
+
     if request.method == "POST":
         # Get form data
         title = request.form.get('title')
@@ -272,6 +319,7 @@ def ask_question():
             question_title=title,
             question_detail=body,
             date=datetime.datetime.now(),
+            official_answer="",
             userid=session.get('user_id'),
             tags =tag_objects
         )
@@ -279,7 +327,7 @@ def ask_question():
         new_answer = answers(
             answer=answer[1],
             questionid = random_id,
-            userid=session.get('user_id'),
+            userid=2,
             upvotes=0,
             downvotes=0,
             marked_as_official=False,
@@ -288,7 +336,6 @@ def ask_question():
 
         db.session.add(new_question)
         db.session.add(new_answer)
-
         db.session.commit()
 
         flash(['Your question has been posted successfully!', 'success'])
@@ -348,4 +395,3 @@ def answers_route():
 def logout():
     session.pop('user_id',None)
     return redirect(url_for('login'))
-

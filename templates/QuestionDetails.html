@@ -1,132 +1,127 @@
-{% extends "layout.html" %}
+{% extends "layout.html" %} {% block title %} Question Detail - question.title
+{% endblock %} {% block style %}
+<style>
+  /* Custom styles for the question detail page */
+</style>
+{% endblock %} {% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <h1 class="text-2xl font-bold mb-4">{{question.question_title}}</h1>
+    <div class="flex items-center text-sm text-gray-500 mb-6">
+      <span>Asked {{relative_time}}</span>
+      <span class="mx-2">•</span>
+      <span>Viewed 999 times</span>
+    </div>
 
-{% block title %}
-  Question Detail -  question.title 
-{% endblock %}
-
-{% block style %}
-  <style>
-    /* Custom styles for the question detail page */
-  </style>
-{% endblock %}
-
-{% block content %}
-  <div class="max-w-6xl mx-auto">
-    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-      <h1 class="text-2xl font-bold mb-4"> {{question.question_title}}</h1>
-      <div class="flex items-center text-sm text-gray-500 mb-6">
-        <span>Asked  {{relative_time}}</span>
-        <span class="mx-2">•</span>
-        <span>Viewed  999  times</span>
-        <span class="mx-2">•</span>
-        <img
-          src=" question.user.avatar_url "
-          alt=" question.user.name "
-          class="w-6 h-6 rounded-full mr-2"
+    <div class="flex gap-6">
+      <div class="flex flex-col items-center space-y-2">
+        <ArrowUp
+          class="h-8 w-8 text-gray-400 hover:text-orange-500 cursor-pointer"
         />
-        <span> {{user_question.uname}} </span>
+        <span class="font-semibold text-xl"> {{question.plus_one}} </span>
+        <ArrowDown
+          class="h-8 w-8 text-gray-400 hover:text-orange-500 cursor-pointer"
+        />
       </div>
 
+      <div class="flex-1">
+        <div class="prose max-w-none">
+          <p>{{question.question_detail}}</p>
+        </div>
+
+        <div class="mt-6 flex items-center space-x-4">
+          {% for tag in question.tags %}
+          <span
+            class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+          >
+            {{tag}}
+          </span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-8">
+    <h2 class="text-xl font-bold mb-4">{{ question.answer_count }} Answers</h2>
+
+    {% for answer in answers %}
+    <div class="bg-white rounded-lg shadow-md p-6 mb-4">
       <div class="flex gap-6">
-        <div class="flex flex-col items-center space-y-2">
-          <ArrowUp class="h-8 w-8 text-gray-400 hover:text-orange-500 cursor-pointer" />
-          <span class="font-semibold text-xl"> {{question.plus_one}} </span>
-          <ArrowDown class="h-8 w-8 text-gray-400 hover:text-orange-500 cursor-pointer" />
+        <div style="text-align: center">
+          <button
+            onclick="upvote()"
+            style="background: none; border: none; cursor: pointer"
+          >
+            <span>⬆️</span>
+          </button>
+          <span id="voteCount" style="font-size: 1.2em; font-weight: bold"
+            >0</span
+          >
+          <button
+            onclick="downvote()"
+            style="background: none; border: none; cursor: pointer"
+          >
+            <span>⬇️</span>
+          </button>
         </div>
 
         <div class="flex-1">
           <div class="prose max-w-none">
-            <p> {{question.question_detail}} </p>
+            <p>{{answer.answer}}</p>
           </div>
 
-          <div class="mt-6 flex items-center space-x-4">
-            {% for tag in question.tags %}
-              <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"> tag </span>
-            {% endfor %}
+          <div class="mt-4 flex items-center justify-end text-sm text-gray-500">
+            {% if answer.uname.uname == "AI@aiquest.com" %}
+            <span>🤖 Answered by AI</span>
+            {% else %}
+            <span>
+              {% if answer.marked_as_official %} ✅ {% endif %} answered
+              {{answer.relative_time}} by {{answer.uname.uname}}
+            </span>
+            {% endif %}
           </div>
         </div>
       </div>
     </div>
-
-    <div class="mb-8">
-      <h2 class="text-xl font-bold mb-4"> question.answer_count  Answers</h2>
-
-      {% for answer in answers %}
-        <div class="bg-white rounded-lg shadow-md p-6 mb-4">
-          <div class="flex gap-6">
-            <div class="flex flex-col items-center space-y-2">
-              <ArrowUp class="h-8 w-8 text-gray-400 hover:text-orange-500 cursor-pointer" />
-              <span class="font-semibold text-xl"> {{answer.upvotes}} </span>
-              <ArrowDown class="h-8 w-8 text-gray-400 hover:text-orange-500 cursor-pointer" />
-            </div>
-
-            <div class="flex-1">
-              <div class="prose max-w-none">
-                <p> {{answer.answer}} </p>
-              </div>
-
-              <div class="mt-4 flex items-center justify-end text-sm text-gray-500">
-                <img
-                  src=" answer.user.avatar_url "
-                  alt=" answer.user.name "
-                  class="w-6 h-6 rounded-full mr-2"
-                />
-                <span>answered  {{answer.relative_time}}  by  {{answer.uname}} </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      {% endfor %}
-
-      <div class="bg-white rounded-lg shadow-md p-6">
-        <div class="flex items-center mb-4">
-          <Bot class="h-6 w-6 text-green-500 mr-2" />
-          <span class="font-semibold">AI Assistant</span>
-        </div>
-        <div class="prose max-w-none">
-          <p>Here's another approach for better cleanup using AbortController:</p>
-          <pre class="bg-gray-50 p-4 rounded-md">
-            {`useEffect(() => {
-  const abortController = new AbortController();
-
-  const fetchData = async () => {
-    try {
-      const result = await fetch(url, {
-        signal: abortController.signal
-      });
-      const data = await result.json();
-      setData(data);
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        return;
-      }
-      setError(error);
-    }
-  };
-
-  fetchData();
-
-  return () => {
-    abortController.abort();
-  };
-}, [url]);`}
-          </pre>
-        </div>
-      </div>
-    </div>
-
-    <div class="bg-white rounded-lg shadow-md p-6">
-      <h3 class="text-xl font-bold mb-4">Your Answer</h3>
-      <form action=" url_for('post_answer', question_id=question.id) " method="POST">
-        <textarea
-          name="answer_body"
-          class="w-full h-48 p-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Write your answer here..."
-        ></textarea>
-        <button type="submit" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
-          Post Your Answer
-        </button>
-      </form>
-    </div>
+    {% endfor %}
   </div>
+
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h3 class="text-xl font-bold mb-4">Your Answer</h3>
+    <form action="/questions_details/{{ question.questionid }}" method="POST">
+      <textarea
+        name="answer_body"
+        class="w-full h-48 p-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 answer"
+        name="answer"
+        id="answer"
+        placeholder="Write your answer here..."
+      ></textarea>
+
+      <div class="mt-4">
+        <label
+          for="official_status"
+          class="block text-sm font-medium text-gray-700"
+        >
+          Mark as Official Answer:
+        </label>
+        <select
+          name="official_status"
+          id="official_status"
+          class="w-full mt-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </select>
+      </div>
+
+      <button
+        type="submit"
+        class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+      >
+        Post Your Answer
+      </button>
+    </form>
+  </div>
+</div>
 {% endblock %}
