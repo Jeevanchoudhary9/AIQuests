@@ -1,0 +1,102 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <h1 class="text-3xl font-bold mb-8">Admin Dashboard</h1>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-lg shadow-md">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Total Users</h3>
+        <svg class="h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path d="M17 20h5v-1a3 3 0 00-3-3h-2a3 3 0 00-3 3v1h5z" />
+        </svg>
+      </div>
+      <p class="text-3xl font-bold">1,234</p>
+      <p class="text-sm text-gray-500 mt-2">+12% from last month</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Questions</h3>
+        <svg class="h-6 w-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path d="M8 10h8M8 6h8M8 14h8m-4 2h2a2 2 0 110 4h-4a2 2 0 01-4-4h2" />
+        </svg>
+      </div>
+      <p class="text-3xl font-bold">856</p>
+      <p class="text-sm text-gray-500 mt-2">+5% from last month</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Answers</h3>
+        <svg class="h-6 w-6 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path d="M8 6h8m-8 4h8M8 14h4m-4 2h2a2 2 0 100-4H6a2 2 0 100 4h2" />
+        </svg>
+      </div>
+      <p class="text-3xl font-bold">2,456</p>
+      <p class="text-sm text-gray-500 mt-2">+18% from last month</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Reported Content</h3>
+        <svg class="h-6 w-6 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
+          <path d="M12 9v2m0 4h.01m6.938-5.071a7.5 7.5 0 11-9.94 0" />
+        </svg>
+      </div>
+      <p class="text-3xl font-bold">23</p>
+      <p class="text-sm text-gray-500 mt-2">Needs moderation</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="bg-white p-6 rounded-lg shadow-md">
+      <h2 class="text-xl font-bold mb-6">Recent Questions Needing Moderation</h2>
+      <div class="space-y-4">
+        {% for question in recent_questions %}
+        <div class="border-b pb-4 last:border-0">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-semibold">{{ question.title }}</h3>
+            <div class="flex space-x-2">
+              <button class="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full hover:bg-green-200">
+                Approve
+              </button>
+              <button class="px-3 py-1 text-sm bg-red-100 text-red-800 rounded-full hover:bg-red-200">
+                Remove
+              </button>
+            </div>
+          </div>
+          <p class="text-sm text-gray-500">Reported {{ question.reported_time }} ago</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md">
+      <h2 class="text-xl font-bold mb-6">Answers Pending Verification</h2>
+      <div class="space-y-4">
+        {% for answer in pending_answers %}
+        <div class="border-b pb-4 last:border-0">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-semibold">Answer to: {{ answer.question_title }}</h3>
+            <div class="flex space-x-2">
+              <button class="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200">
+                Mark Official
+              </button>
+              <button class="px-3 py-1 text-sm bg-gray-100 text-gray-800 rounded-full hover:bg-gray-200">
+                Skip
+              </button>
+            </div>
+          </div>
+          <p class="text-sm text-gray-500">Posted {{ answer.posted_time }} ago</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
