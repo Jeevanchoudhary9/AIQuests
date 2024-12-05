@@ -26,14 +26,6 @@
 
 
 {% block content %}
-
-{{invites}}
-{{invites[0].email}}
-{{invites[0].role}}
-{{invites[0].date}}
-{{invites[0].code}}
-{{invites[0].registered}}
-{{invites[0].id}}
 <div class="relative overflow-x-auto shadow-md sm:rounded-lg m-12">
     <div class="flex items-center justify-between flex-column md:flex-row flex-wrap space-y-4 md:space-y-0 py-4 bg-white dark:bg-gray-900">
         <div>
@@ -107,9 +99,15 @@
                     data-email="{{ invite.email }}"
                     data-role="{{ invite.role }}"
                     data-code="{{ invite.code }}"
+                    data-registered="{{ invite.registered }}"
+                    data-email-old="{{ invite.email }}"
                     >Edit user</a>
                     <span class="text-gray-500">|</span>
-                    <a href="#" type="button" class="font-medium text-red-600 dark:text-blue-500 hover:underline">Delete user</a>
+                    <a href="#" type="button" class="font-medium text-red-600 dark:text-blue-500 hover:underline delete-user"
+                        data-inviteid="{{ invite.inviteid }}"
+                        data-email="{{ invite.email }}"
+                        data-registered="{{ invite.registered }}"
+                        >Delete user</a>
                 </td>
             </tr>
             {% endfor %}
@@ -211,101 +209,163 @@
 {% endblock %}
 {% block script %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Modals functionality
-    function setupModal(modalTriggerSelector, modalId, modalHideSelector) {
-        const editButtons = document.querySelectorAll(modalTriggerSelector);
-        const modal = document.getElementById(modalId);
-        const closeModalButtons = modal.querySelectorAll(modalHideSelector);
-        
-        // Show modal functionality
-        editButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                modal.classList.remove('hidden');
-                modal.classList.add('modal-center');
-                modal.setAttribute('aria-hidden', 'false');
-                
-                // Populate modal with data attributes for edit modal
-                if (modalId === 'editUserModal') {
-                    const emailInput = modal.querySelector('#editemail');
-                    const orgidInput = modal.querySelector('#editorgid');
-                    const roleInput = modal.querySelector('#editrole');
-                    const codeInput = modal.querySelector('#editcode');
+    document.getElementById("table-search-users").addEventListener("input", function () {
+        const filter = this.value.toLowerCase();
+        const rows = document.querySelectorAll("tbody tr");
+    
+        rows.forEach(row => {
+          const emailCell = row.querySelector("th .text-base");
+          if (emailCell) {
+            const email = emailCell.textContent.toLowerCase();
+            row.style.display = email.includes(filter) ? "" : "none";
+          }
+        });
+      });
+      
+    document.addEventListener('DOMContentLoaded', function() {
+        // Modals functionality
+        function setupModal(modalTriggerSelector, modalId, modalHideSelector) {
+            const editButtons = document.querySelectorAll(modalTriggerSelector);
+            const modal = document.getElementById(modalId);
+            const closeModalButtons = modal.querySelectorAll(modalHideSelector);
+            
+            // Show modal functionality
+            editButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    modal.classList.remove('hidden');
+                    modal.classList.add('modal-center');
+                    modal.setAttribute('aria-hidden', 'false');
                     
-                    emailInput.value = this.getAttribute('data-email') || '';
-                    orgidInput.value = this.getAttribute('data-orgid') || '';
-                    roleInput.value = this.getAttribute('data-role') || '';
-                    codeInput.value = this.getAttribute('data-code') || '';
-                }
+                    // Populate modal with data attributes for edit modal
+                    if (modalId === 'editUserModal') {
+                        const emailInput = modal.querySelector('#editemail');
+                        const orgidInput = modal.querySelector('#editorgid');
+                        const roleInput = modal.querySelector('#editrole');
+                        const codeInput = modal.querySelector('#editcode');
+                        
+                        emailInput.value = this.getAttribute('data-email') || '';
+                        orgidInput.value = this.getAttribute('data-orgid') || '';
+                        roleInput.value = this.getAttribute('data-role') || '';
+                        codeInput.value = this.getAttribute('data-code') || '';
+                    }
+                });
             });
-        });
-        
-        // Close modal functionality
-        closeModalButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                modal.classList.add('hidden');
-                modal.classList.remove('modal-center');
-                modal.setAttribute('aria-hidden', 'true');
+            
+            // Close modal functionality
+            closeModalButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('modal-center');
+                    modal.setAttribute('aria-hidden', 'true');
+                });
             });
-        });
-    }
-    
-    // Setup edit user modal
-    setupModal('[data-modal-show="editUserModal"]', 'editUserModal', '[data-modal-hide="editUserModal"]');
-    
-    // Setup invite user modal
-    setupModal('[data-modal-target="inviteUserModal"]', 'inviteUserModal', '[data-modal-hide="inviteUserModal"]');
-    
-    // Edit form submission
-    const editModal = document.getElementById('editUserModal');
-    const editForm = editModal.querySelector('form');
-    const newPasswordInput = document.getElementById('editnew-password');
-    const confirmPasswordInput = document.getElementById('editconfirm-password');
-    
-    editForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Basic password validation
-        if (newPasswordInput.value && newPasswordInput.value !== confirmPasswordInput.value) {
-            alert('Passwords do not match');
-            return;
         }
         
-        // Prepare form data
-        const formData = {
-            email: document.getElementById('editemail').value,
-            orgid: document.getElementById('editorgid').value,
-            role: document.getElementById('editrole').value,
-            code: document.getElementById('editcode').value,
-            new_password: newPasswordInput.value || null
-        };
+        // Setup edit user modal
+        setupModal('[data-modal-show="editUserModal"]', 'editUserModal', '[data-modal-hide="editUserModal"]');
         
-        // Send data via fetch
-        fetch('/update_user', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('User updated successfully');
-                editModal.classList.add('hidden');
-                editModal.classList.remove('modal-center');
-                editModal.setAttribute('aria-hidden', 'true');
-                location.reload();
-            } else {
-                alert('Error updating user: ' + data.message);
+        // Setup invite user modal
+        setupModal('[data-modal-target="inviteUserModal"]', 'inviteUserModal', '[data-modal-hide="inviteUserModal"]');
+        
+        // Edit form submission
+        const editModal = document.getElementById('editUserModal');
+        const editForm = editModal.querySelector('form');
+        const newPasswordInput = document.getElementById('editnew-password');
+        const confirmPasswordInput = document.getElementById('editconfirm-password');
+        
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Basic password validation
+            if (newPasswordInput.value && newPasswordInput.value !== confirmPasswordInput.value) {
+                alert('Passwords do not match');
+                return;
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while updating the user');
+            
+            // Find the edit button to get the data-registered attribute
+            const editButton = document.querySelector('[data-modal-show="editUserModal"]');
+            
+            // Prepare form data
+            const formData = {
+                email: document.getElementById('editemail').value,
+                orgid: document.getElementById('editorgid').value,
+                role: document.getElementById('editrole').value,
+                code: document.getElementById('editcode').value,
+                new_password: newPasswordInput.value || null,
+                confirm_password: confirmPasswordInput.value || null,
+                registered: editButton.getAttribute('data-registered'),
+                id: editButton.getAttribute('data-id')
+            };
+            console.log(formData);
+            
+            // Send data via fetch
+            fetch('/UserManager', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('User updated successfully');
+                    editModal.classList.add('hidden');
+                    editModal.classList.remove('modal-center');
+                    editModal.setAttribute('aria-hidden', 'true');
+                    location.reload();
+                } else {
+                    alert('Error updating user: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the user');
+            });
+        });
+
+        const deleteButtons = document.querySelectorAll('a.delete-user');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            // Get user details from data attributes
+            const inviteid = this.getAttribute('data-inviteid');
+            const userEmail = this.getAttribute('data-email');
+            const registered = this.getAttribute('data-registered');
+
+            // Confirm deletion
+            if (confirm(`Are you sure you want to delete the user with email ${userEmail}?`)) {
+                // Send delete request
+                fetch('/UserManager', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        inviteid: inviteid,
+                        email: userEmail,
+                        registered: registered,
+
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('User deleted successfully');
+                        location.reload(); // Refresh the page
+                    } else {
+                        alert('Error deleting user: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while deleting the user');
+                });
+            }
         });
     });
-});
+    });
 </script>
 {% endblock %}

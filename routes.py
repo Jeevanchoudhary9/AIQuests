@@ -1,5 +1,5 @@
 import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, jsonify
 from sqlalchemy import distinct
 from app import app
 from functools import wraps
@@ -9,6 +9,7 @@ import ollama
 import re
 import humanize
 from transformers import BertTokenizer, BertModel
+from werkzeug.security import generate_password_hash
 import torch
 import io
 import random
@@ -119,9 +120,105 @@ def inviteUser():
     invite = Invites(email=email,role=role,code=code,orgid=orgid,date=date)
     db.session.add(invite)
     db.session.commit()
+    flash(['Invited successfully','success'])
 
 
-    return render_template('OrgUserManager.html')
+    return redirect(url_for('userManager'))
+
+
+
+@app.route('/UserManager')
+def userManager():
+    invites = Invites.query.all()
+    print(datetime.datetime.now())
+    characters = string.ascii_uppercase + string.digits
+    code = ''.join(random.choice(characters) for _ in range(16))
+    print(code)
+    all_invites = []
+    for invite in invites:
+        all_invites.append(invite.serializer())
+    return render_template('OrgUserManager.html',invites=all_invites)
+
+
+@app.route('/UserManager', methods=['POST'])
+def UserManager():
+    try:
+        # Get JSON data
+        data = request.get_json()
+        print(data)
+        if not data:
+            return jsonify({'success': False, 'message': 'No data provided'}), 400
+        if not data.get('email'):
+            return jsonify({'success': False, 'message': 'Email is required'}), 400
+        if not data.get('orgid'):
+            return jsonify({'success': False, 'message': 'Organization ID is required'}), 400
+        if not data.get('role'):
+            return jsonify({'success': False, 'message': 'Role is required'}), 400
+        if not data.get('code'):
+            return jsonify({'success': False, 'message': 'Code is required'}), 400
+        if data.get('new_password') != data.get('confirm_password'):
+            return jsonify({'success': False, 'message': 'Passwords do not match'}), 400
+        try:
+            orgid=str(Organizations.query.filter_by(orgid=data.get('orgid')).first().orgid)
+        except:
+            return jsonify({'success': False, 'message': 'Organization not found'}), 404
+        if data.get('orgid') != orgid:
+            return jsonify({'success': False, 'message': 'Organization not found'}), 404
+        if data.get('registered') == 'False' and data.get('new_password') is not None or data.get('confirm_password') is not None:
+            return jsonify({'success': False, 'message': 'Password is not required for unregistered users'}), 400
+        if data.get('id') is None:
+            return jsonify({'success': False, 'message': 'ID is required'}), 400
+        
+        if data.get('registered') == 'True':
+            user = User.query.filter_by(userid=data['id']).first()
+            user.email = data.get('email')
+            user.orgid = data.get('orgid')
+            invite = Invites.query.filter_by(inviteid=data['id']).first()
+            invite.email = data.get('email')
+            invite.role = data.get('role')
+            invite.orgid = data.get('orgid')
+            
+            if data.get('new_password'):
+                user.password = generate_password_hash(data.get('new_password'))
+
+        elif data.get('registered') == 'False':
+            invite = Invites.query.filter_by(inviteid=data['id']).first()
+            invite.email = data.get('email')
+            invite.role = data.get('role')
+            invite.orgid = data.get('orgid')
+            
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+    
+@app.route('/UserManager', methods=['DELETE'])
+def UserManager_delete():
+    print(request.get_json())
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'message': 'No data provided'}), 400
+    if not data.get('inviteid'):
+        return jsonify({'success': False, 'message': 'ID is required'}), 400
+    if not data.get('registered'):
+        return jsonify({'success': False, 'message': 'Registered status is required'}), 400
+    if data.get('registered') == 'True':
+        try:
+            user = User.query.filter_by(email=data['email']).first()
+            db.session.delete(user)
+            db.session.commit()
+        except:
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+    elif data.get('registered') == 'False':
+        invite = Invites.query.filter_by(inviteid=data['inviteid']).first()
+        db.session.delete(invite)
+        db.session.commit()
+
+    return jsonify({'success': True})
 
 
 
