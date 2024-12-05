@@ -95,9 +95,8 @@ def user_dashboard():
         {'id': 2, 'title': 'Best practices for React state management?', 'short_description': 'Looking for suggestions on managing state...', 'time_ago': '1 day', 'answer_count': 3, 'asker_name': 'Jane Smith'},
         {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
     ]
-
+    
     return render_template('user_dashboard.html', questions=questions)
-
 
 
 @app.route('/invite_user',methods=["POST"])
@@ -123,6 +122,9 @@ def inviteUser():
 
 
     return render_template('OrgUserManager.html')
+
+
+
 
 
 # @app.route('/profile')
