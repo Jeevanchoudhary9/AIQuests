@@ -29,6 +29,22 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.passhash, password)
+    
+    def __repr__(self):
+        return f'<User {self.userid}>'
+    
+    def __str__(self):
+        return f'{self.username}'
+    
+    def serializer(self):
+        return {
+            'userid': self.userid,
+            'firstname': self.firstname,
+            'lastname': self.lastname,
+            'email': self.email,
+            'username': self.username,
+            'organization': self.organization
+        }
 
 
 
