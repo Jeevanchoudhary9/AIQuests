@@ -9,24 +9,98 @@
 </head>
 
 <body class="bg-gradient-to-b from-blue-50 to-white">
+  <nav class="bg-white border-b border-gray-200">
+      <div class="container mx-auto px-4">
+        <div class="flex items-center justify-between h-16">
+          <div class="flex items-center space-x-8">
+            <a
+              href="{{ url_for('index') }}"
+              class="flex items-center space-x-2"
+            >
+              <svg
+                class="h-8 w-8 text-orange-500"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12" y2="16" />
+              </svg>
+              <span class="text-xl font-bold">aiQuest</span>
+            </a>
+            <div class="relative">
+              <input
+                type="text"
+                placeholder="Search questions..."
+                class="w-96 pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+              <svg
+                class="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M21 21l-4.35-4.35m1.35-6.65A9 9 0 1 1 12 3a9 9 0 0 1 9 9z"
+                ></path>
+              </svg>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            {% if not 'user_id' in session %}
+            <a
+              href="{{ url_for('login') }}"
+              class="px-4 py-2 text-gray-700 hover:text-gray-900"
+            >
+              Log in{{user}}
+            </a>
+            <a
+              href="{{ url_for('register') }}"
+              class="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600"
+            >
+              Join now{{user}}
+            </a>
+            {% else %}
+            <a
+              href="{{ url_for('questions') }}"
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Questions
+            </a>
+            <a
+              href="{{ url_for('logout') }}"
+              class="px-4 py-2 text-gray-700 hover:text-gray-900"
+            >
+              Log out
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </nav>
   <div class="max-w-7xl mx-auto px-4 py-20">
     <!-- Hero Section -->
     <div class="text-center mb-16">
       <h1 class="text-5xl font-bold mb-6">
-        Where Developers Find <br />
+        Where you Find <br />
         <span class="text-blue-600">Smart Solutions</span>
       </h1>
       <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-        Get instant answers from AI and expert developers. Join our community and level up your coding journey.
+        Get instant answers from AI and subject matter experts. Join your organization community today.
       </p>
       <div class="flex justify-center space-x-4">
         <a href="{{ url_for('orgregister') }}"
           class="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition">
           Join the Community
-        </a>
-        <a href="/questions"
-          class="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-50 transition border border-blue-600">
-          Browse Questions
         </a>
       </div>
     </div>
@@ -36,65 +110,37 @@
       <!-- Card 1 -->
       <div class="bg-white p-8 rounded-xl shadow-md transform hover:-translate-y-1 transition">
         <div class="bg-blue-100 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
-          <img src="icons/code.svg" alt="Code Icon" class="h-6 w-6 text-blue-600" />
+          <img src="{{ url_for('static', filename='img/idea.png') }}" alt="Code Icon" class="h-6 w-6 text-blue-600" />
         </div>
-        <h3 class="text-xl font-bold mb-4">Smart Code Solutions</h3>
+        <h3 class="text-xl font-bold mb-4">Expert Solutions</h3>
         <p class="text-gray-600 mb-4">
-          Get detailed explanations and best practices for your coding challenges.
+          Get detailed explanations and information on best practices from experts.
         </p>
-        <a href="/questions" class="text-blue-600 font-semibold inline-flex items-center hover:text-blue-700">
-          Explore Solutions
-          <img src="icons/arrow-right.svg" alt="Arrow Icon" class="ml-2 h-4 w-4" />
-        </a>
       </div>
 
       <!-- Card 2 -->
       <div class="bg-white p-8 rounded-xl shadow-md transform hover:-translate-y-1 transition">
         <div class="bg-green-100 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
-          <img src="icons/bot.svg" alt="Bot Icon" class="h-6 w-6 text-green-600" />
+          <img src="{{ url_for('static', filename='img/ai.png') }}" alt="Bot Icon" class="h-6 w-6 text-green-600" />
         </div>
         <h3 class="text-xl font-bold mb-4">AI-Powered Assistance</h3>
         <p class="text-gray-600 mb-4">
-          Get instant answers from our AI assistant trained on best coding practices.
+          Get instant answers from our AI assistant trained on your company resources.
         </p>
-        <a href="/ask" class="text-green-600 font-semibold inline-flex items-center hover:text-green-700">
-          Try AI Assistant
-          <img src="icons/arrow-right.svg" alt="Arrow Icon" class="ml-2 h-4 w-4" />
-        </a>
       </div>
 
       <!-- Card 3 -->
       <div class="bg-white p-8 rounded-xl shadow-md transform hover:-translate-y-1 transition">
         <div class="bg-purple-100 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
-          <img src="icons/users.svg" alt="Users Icon" class="h-6 w-6 text-purple-600" />
+          <img src="{{ url_for('static', filename='img/leader.png') }}" alt="Users Icon" class="h-6 w-6 text-purple-600" />
         </div>
         <h3 class="text-xl font-bold mb-4">Expert Community</h3>
         <p class="text-gray-600 mb-4">
           Connect with experienced developers and build your reputation.
         </p>
-        <a href="/signup" class="text-purple-600 font-semibold inline-flex items-center hover:text-purple-700">
-          Join Community
-          <img src="icons/arrow-right.svg" alt="Arrow Icon" class="ml-2 h-4 w-4" />
-        </a>
       </div>
     </div>
 
-    <!-- Search Section -->
-    <div class="bg-white p-8 rounded-xl shadow-md">
-      <div class="max-w-3xl mx-auto">
-        <div class="relative">
-          <img src="icons/search.svg" alt="Search Icon" class="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
-          <input type="text" placeholder="Search for coding solutions..."
-            class="w-full pl-12 pr-4 py-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        </div>
-        <div class="mt-4 flex flex-wrap gap-2">
-          <span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">react</span>
-          <span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">javascript</span>
-          <span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">python</span>
-          <span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">node.js</span>
-        </div>
-      </div>
-    </div>
   </div>
 </body>
 

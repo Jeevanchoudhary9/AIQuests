@@ -53,27 +53,51 @@ def manager_required(func):
 
 
 @app.route('/')
-def land():
+def index():
     return render_template('Landingpage.html')
 
-@app.route('/home')
+
+@app.route('/dashboard/organization')
 # @auth_required
-def index():
+def organization_dashboard():
     questions = [
         {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
         {'id': 2, 'title': 'Best practices for React state management?', 'short_description': 'Looking for suggestions on managing state...', 'time_ago': '1 day', 'answer_count': 3, 'asker_name': 'Jane Smith'},
         {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
     ]
 
+    return render_template('home.html', questions=questions)
+
+
+@app.route('/dashboard/expert')
+# @auth_required
+def expert_dahboard():
+    questions = [
+        {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
+        {'id': 2, 'title': 'Best practices for React state management?', 'short_description': 'Looking for suggestions on managing state...', 'time_ago': '1 day', 'answer_count': 3, 'asker_name': 'Jane Smith'},
+        {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
+    ]
 
     return render_template('home.html', questions=questions)
-    # return render_template('home.html')
+
+
+@app.route('/dashboard/user')
+# @auth_required
+def user_dashboard():
+    questions = [
+        {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
+        {'id': 2, 'title': 'Best practices for React state management?', 'short_description': 'Looking for suggestions on managing state...', 'time_ago': '1 day', 'answer_count': 3, 'asker_name': 'Jane Smith'},
+        {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
+    ]
+
+    return render_template('home.html', questions=questions)
 
 
 @app.route('/UserManager')
 def userManager():
     invites = Invites.query.all()
     return render_template('OrgUserManager.html',invites=invites)
+
 
 @app.route('/invite_user',methods=["POST"])
 def inviteUser():
