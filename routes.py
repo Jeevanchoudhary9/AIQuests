@@ -90,12 +90,30 @@ def user_dashboard():
         {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
     ]
 
-    return render_template('home.html', questions=questions)
+    pending_answers= [
+        {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
+        {'id': 2, 'title': 'Best practices for React state management?', 'short_description': 'Looking for suggestions on managing state...', 'time_ago': '1 day', 'answer_count': 3, 'asker_name': 'Jane Smith'},
+        {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
+    ]
+
+    return render_template('Dashboard.html', recent_questions=questions, pending_answers=pending_answers)
 
 
 @app.route('/UserManager')
 def userManager():
     invites = Invites.query.all()
+    print(datetime.datetime.now())
+    characters = string.ascii_uppercase + string.digits
+    code = ''.join(random.choice(characters) for _ in range(16))
+    print(code)
+    invites=[
+        {'inviteid': 1, 'orgid': 1, 'email': 'new@org.com', 'role': 'user', 'date': datetime.datetime(2024, 12, 5, 21, 47, 57, 150033), 'code': '7RZSKUWEB4IBY29G', 'registered': False},
+        {'inviteid': 2, 'orgid': 1, 'email': 'news@org.com', 'role': 'user', 'date': datetime.datetime(2024, 12, 5, 21, 47, 57, 150033), 'code': '8RZSKUWEB4IBY29G', 'registered': True},
+        {'inviteid': 3, 'orgid': 1, 'email': 'naa@org.com', 'role': 'Admin', 'date': datetime.datetime(2024, 12, 5, 21, 47, 57, 150033), 'code': '9RZSKUWEB4IBY29G', 'registered': False},
+        {'inviteid': 4, 'orgid': 1, 'email': 'op@org.com', 'role': 'user', 'date': datetime.datetime(2024, 12, 5, 21, 47, 57, 150033), 'code': '0RZSKUWEB4IBY29G', 'registered': True},
+        {'inviteid': 5, 'orgid': 1, 'email': 'oooo@org.com', 'role': 'Moderator', 'date': datetime.datetime(2024, 12, 5, 21, 47, 57, 150033), 'code': '1RZSKUWEB4IBY29G', 'registered': False},
+
+             ]
     return render_template('OrgUserManager.html',invites=invites)
 
 
@@ -122,6 +140,9 @@ def inviteUser():
 
 
     return render_template('OrgUserManager.html')
+
+
+
 
 
 # @app.route('/profile')
