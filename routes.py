@@ -51,16 +51,12 @@ def manager_required(func):
     return inner
 
 
-# @app.route('/home')
-# # @auth_required
-# def homepage():
-#     return render_template('index.html',user=User.query.filter_by(userid=session['user_id']).first(),nav="dashboard")
 
-@app.route('/land')
+@app.route('/')
 def land():
     return render_template('Landingpage.html')
 
-@app.route('/')
+@app.route('/home')
 # @auth_required
 def index():
     questions = [
@@ -174,7 +170,7 @@ def login_post():
 def register():
     return render_template('register.html')
 
-@app.route('/orgregister',methods=["GET"])
+@app.route('/register/organization',methods=["GET"])
 def orgregister():
     return render_template('organizationRegister.html')
 
@@ -183,7 +179,7 @@ def get_image(id):
     image = Organizations.query.get(id)
     return send_file(io.BytesIO(image.orglogo), mimetype='image/jpeg')
 
-@app.route('/orgregister',methods=["POST"])
+@app.route('/register/organization',methods=["POST"])
 def orgregister_post():
     orgname = request.form.get('orgname')
     orgemail = request.form.get('orgemail')
@@ -373,67 +369,67 @@ def register_post():
 
 
 # @auth_required
-# @app.route('/ask_question', methods=["GET", "POST"])
-# def ask_question():
+@app.route('/ask_question', methods=["GET", "POST"])
+def ask_question():
 
-#     if request.method == "POST":
-#         # Get form data
-#         title = request.form.get('title')
-#         body = request.form.get('body')
-#         tags = request.form.get('tags')
+    if request.method == "POST":
+        # Get form data
+        title = request.form.get('title')
+        body = request.form.get('body')
+        tags = request.form.get('tags')
 
-#         question=request.form.get('question')
-#         prompt = "Answer the given question: " + title + body + "from" + tags + ' in format {"question": "The same question", "answer": "Your answer"} the answer should be in the format {"question": "The same question", "answer": "Your answer"}'
-#         response = ollama.generate(model='llama3.2', prompt=prompt)
-#         print(response["response"])
+        question=request.form.get('question')
+        prompt = "Answer the given question: " + title + body + "from" + tags + ' in format {"question": "The same question", "answer": "Your answer"} the answer should be in the format {"question": "The same question", "answer": "Your answer"}'
+        response = ollama.generate(model='llama3.2', prompt=prompt)
+        print(response["response"])
         
-#         # Parse json
-#         regex = r'{"question": "(.*?)", "answer": "(.*?)"}'
-#         matches = re.findall(regex, response["response"])
-#         print(matches)
-#         answer = matches[0]
+        # Parse json
+        regex = r'{"question": "(.*?)", "answer": "(.*?)"}'
+        matches = re.findall(regex, response["response"])
+        print(matches)
+        answer = matches[0]
 
-#         # Basic validation to check if all fields are filled
-#         if not title or not body or not tags:
-#             flash('Please fill in all fields.', 'error')
-#             return redirect(url_for('ask_question'))
+        # Basic validation to check if all fields are filled
+        if not title or not body or not tags:
+            flash('Please fill in all fields.', 'error')
+            return redirect(url_for('ask_question'))
         
-#         # Optional: Process and store tags (you may choose to split them by commas or space)
-#         tag_list = tags.split()
-#         tag_objects = []
-#         for tag in tag_list:
-#             tag_objects.append(tag)
+        # Optional: Process and store tags (you may choose to split them by commas or space)
+        tag_list = tags.split()
+        tag_objects = []
+        for tag in tag_list:
+            tag_objects.append(tag)
         
-#         random_id = random.randint(1000, 9999)
+        random_id = random.randint(1000, 9999)
 
-#         # Create and save the question
-#         new_question = Questions(
-#             questionid = random_id,
-#             question_title=title,
-#             question_detail=body,
-#             date=datetime.datetime.now(),
-#             official_answer="",
-#             userid=session.get('user_id'),
-#             tags =tag_objects
-#         )
+        # Create and save the question
+        new_question = Questions(
+            questionid = random_id,
+            question_title=title,
+            question_detail=body,
+            date=datetime.datetime.now(),
+            official_answer="",
+            userid=session.get('user_id'),
+            tags =tag_objects
+        )
 
-#         new_answer = answers(
-#             answer=answer[1],
-#             questionid = random_id,
-#             userid=2,
-#             upvotes=0,
-#             downvotes=0,
-#             marked_as_official=False,
-#             date=datetime.datetime.now()
-#         )
+        new_answer = Answers(
+            answer=answer[1],
+            questionid = random_id,
+            userid=2,
+            upvotes=0,
+            downvotes=0,
+            marked_as_official=False,
+            date=datetime.datetime.now()
+        )
 
-#         db.session.add(new_question)
-#         db.session.add(new_answer)
-#         db.session.commit()
+        db.session.add(new_question)
+        db.session.add(new_answer)
+        db.session.commit()
 
-#         flash(['Your question has been posted successfully!', 'success'])
-#         return redirect(url_for('ask_question'))  # Redirect to the same page or another page
-#     return render_template('AskQuestion.html')
+        flash(['Your question has been posted successfully!', 'success'])
+        return redirect(url_for('ask_question'))  # Redirect to the same page or another page
+    return render_template('AskQuestion.html')
 
 
 # @app.route('/answers', methods=['GET', 'POST', 'DELETE', 'PUT'])

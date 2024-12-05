@@ -25,10 +25,10 @@ class User(db.Model):
     
     @password.setter
     def password(self, password):
-        self.passhash = generate_password_hash(password)
+        self.password = generate_password_hash(password)
 
     def check_password(self, password):
-        return check_password_hash(self.passhash, password)
+        return check_password_hash(self.password, password)
     
     def __repr__(self):
         return f'<User {self.userid}>'
@@ -278,6 +278,7 @@ class Invites(db.Model):
             'registered': self.registered
         }
     
+
 
         
 with app.app_context():
