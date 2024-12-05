@@ -10,7 +10,7 @@ db=SQLAlchemy(app)
 
 
 class User(db.Model):
-    __TableName__ = 'user'
+    __TableName__ = 'users'
     userid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
     firstname = db.Column(db.String(20), nullable=False)
     lastname = db.Column(db.String(20))
@@ -56,12 +56,12 @@ class Questions(db.Model):
             'date': self.date,
             'ai_answer': self.ai_answer,
             'tags': self.tags,
-            'no_of_ans': answers.query.filter_by(questionid=self.questionid).count(),
+            'no_of_ans': Answers.query.filter_by(questionid=self.questionid).count(),
             'relative_time' : humanize.naturaltime(datetime.datetime.now() - self.date)
         }
 
 
-class plus_ones(db.Model):
+class Plus_ones(db.Model):
     __tablename__ = 'plus_ones'
     plusoneid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
     questionid = db.Column(db.Integer, db.ForeignKey('Questions.questionid'), nullable=False)
@@ -69,7 +69,7 @@ class plus_ones(db.Model):
     date = db.Column(db.DateTime, nullable=False)
 
 
-class answers(db.Model):
+class Answers(db.Model):
     __tablename__ = 'answers'
     answerid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
     answer = db.Column(db.String(200), nullable=False)
@@ -101,7 +101,7 @@ class answers(db.Model):
         }
     
 
-class votes(db.Model):
+class Votes(db.Model):
     __tablename__ = 'votes'
     voteid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
     vote = db.Column(db.String(10), nullable=False)
@@ -155,15 +155,14 @@ class Organizations(db.Model):
     orgid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
     orgname = db.Column(db.String(50), nullable=False)
     orgdesc = db.Column(db.String(200), nullable=True)
-    orglogo = db.Column(db.String(200), nullable=True)
+    orglogo = db.Column(db.LargeBinary, nullable=True)
     orgemail = db.Column(db.String(50), nullable=False)
-    orgPassword = db.Column(db.String(1024), nullable=False)
+    orgpassword = db.Column(db.String(1024), nullable=False)
     orgphone = db.Column(db.String(20), nullable=True)
     orgaddress = db.Column(db.String(200), nullable=True)
     orgwebsite = db.Column(db.String(200), nullable=False)
     orgtype = db.Column(db.String(20), nullable=True)
-    orgTotalMembers = db.Column(db.Integer, nullable=True)
-    orgadmin = db.Column(db.Integer, db.ForeignKey('user.userid'), nullable=False)
+    orgTotalMembers = db.Column(db.Integer, nullable=True,default=0)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.datetime.now)
 
     def __repr__(self):
@@ -184,12 +183,11 @@ class Organizations(db.Model):
             'orgwebsite': self.orgwebsite,
             'orgtype': self.orgtype,
             'orgTotalMembers': self.orgTotalMembers,
-            'orgadmin': self.orgadmin,
             'orgdate': self.orgdate
         }
 
 
-class Moderator(db.Model):
+class Moderators(db.Model):
     __tablename__ = 'moderator'
     modid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
     userid = db.Column(db.Integer, db.ForeignKey('user.userid'), nullable=False)
@@ -236,20 +234,50 @@ class Labels(db.Model):
             'orgid': self.orgid,
             'date': self.date
         }
+    
+class Invites(db.Model):
+    __tablename__ = 'invites'
+    inviteid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
+    orgid = db.Column(db.Integer, db.ForeignKey('organizations.orgid'), nullable=False)
+    email = db.Column(db.String(50), nullable=False)
+    role = db.Column(db.String(50), nullable=False)
+    date = db.Column(db.DateTime, nullable=False)
+    code = db.Column(db.String(50), nullable=False)
+    registered = db.Column(db.Boolean, nullable=False, default=False)
+
+    def __repr__(self):
+        return f'<Invite {self.inviteid}>'
+    
+    def __str__(self):
+        return f'{self.email}'
+    
+    def serializer(self):
+        return {
+            'inviteid': self.inviteid,
+            'orgid': self.orgid,
+            'email': self.email,
+            'role': self.role,
+            'date': self.date,
+            'code': self.code,
+            'registered': self.registered
+        }
+    
 
         
 with app.app_context():
     db.create_all()
 
-    admin=User.query.filter_by(username='admin').first()
-    if not admin:
-        organization=Organizations(
-            orgname = "Dummy Organization", orgemail = "org email", orgwebsite = "www.dummy.com",
-            orgadmin = "", orgtype = "type", orgTotalMembers = 1)
+    # admin=User.query.filter_by(username='admin').first()
+    # if not admin:
+    #     organization=Organizations(
+    #         orgname = "Dummy Organization", orgemail = "org email", orgwebsite = "www.dummy.com",
+    #         orgadmin = "", orgtype = "type", orgTotalMembers = 1)
             
-        admin=User(username='admin', password='admin',
-                    firstname='admin', lastname='admin',email='admin@admin.com')
-        # admin_profile=Profile(profileid='1', firstname='admin', lastname='admin',email='admin@admin.com')
-        db.session.add(organization)
-        db.session.add(admin)
-        db.session.commit()
+    #     admin=User(username='admin', password='admin',
+    #                 firstname='admin', lastname='admin',email='admin@admin.com')
+    #     # admin_profile=Profile(profileid='1', firstname='admin', lastname='admin',email='admin@admin.com')
+    #     db.session.add(organization)
+    #     db.session.add(admin)
+    #     db.session.commit()
+
+    
