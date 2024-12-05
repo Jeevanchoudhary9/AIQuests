@@ -13,6 +13,7 @@ import torch
 import io
 import random
 import string
+from functools import wraps
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 model = BertModel.from_pretrained('bert-base-uncased')
@@ -28,28 +29,34 @@ def get_bert_embedding(text):
     return embedding
 
 
-def auth_required(func):
-    @wraps(func)
-    def inner(*args, **kwargs):
-        if 'user_id' not in session:
-            flash('Please login to continue')
-            return redirect(url_for('login'))
-        return func(*args, **kwargs)
-    return inner
-
-
-def manager_required(func):
-    @wraps(func)
-    def inner(*args, **kwargs):
-        if 'user_id' not in session:
-            flash('Please login to continue')
-            return redirect(url_for('login'))
-        if User.query.filter_by(userid=session['user_id']).first().role!="manager":
-            flash('You are not authorized to access this page')
-            return redirect(url_for('homepage'))
-        return func(*args, **kwargs)
-    return inner
-
+def role_required(role=None):
+    """
+    A decorator to ensure the user is authenticated and optionally has a specific role.
+    :param role: (Optional) The required role to access the route. If None, return the role of the current user.
+    """
+    def decorator(func):
+        @wraps(func)
+        def inner(*args, **kwargs):
+            if 'user_id' not in session:
+                flash('Please login to continue')
+                return redirect(url_for('index'))
+            
+            user = User.query.filter_by(userid=session['user_id']).first()
+            if not user:
+                flash('User not found. Please login again.')
+                return redirect(url_for('index'))
+            
+            if role:
+                if user.role != role:
+                    flash('You are not authorized to access this page')
+                    return redirect(url_for('index'))
+            else:
+                # Pass the user's role to the wrapped function
+                kwargs['user_role'] = user.role
+            
+            return func(*args, **kwargs)
+        return inner
+    return decorator
 
 
 @app.route('/')
@@ -58,7 +65,6 @@ def index():
 
 
 @app.route('/dashboard/organization')
-# @auth_required
 def organization_dashboard():
     questions = [
         {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
@@ -66,11 +72,11 @@ def organization_dashboard():
         {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
     ]
 
-    return render_template('home.html', questions=questions)
+    return render_template('Dashboard.html', questions=questions)
 
 
 @app.route('/dashboard/expert')
-# @auth_required
+@role_required('expert')
 def expert_dahboard():
     questions = [
         {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
@@ -78,43 +84,19 @@ def expert_dahboard():
         {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
     ]
 
-    return render_template('home.html', questions=questions)
+    return render_template('expert_dahboard.html', questions=questions)
 
 
 @app.route('/dashboard/user')
-# @auth_required
+@role_required('user')
 def user_dashboard():
     questions = [
         {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
         {'id': 2, 'title': 'Best practices for React state management?', 'short_description': 'Looking for suggestions on managing state...', 'time_ago': '1 day', 'answer_count': 3, 'asker_name': 'Jane Smith'},
         {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
     ]
-
-    pending_answers= [
-        {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
-        {'id': 2, 'title': 'Best practices for React state management?', 'short_description': 'Looking for suggestions on managing state...', 'time_ago': '1 day', 'answer_count': 3, 'asker_name': 'Jane Smith'},
-        {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
-    ]
-
-    return render_template('Dashboard.html', recent_questions=questions, pending_answers=pending_answers)
-
-
-@app.route('/UserManager')
-def userManager():
-    invites = Invites.query.all()
-    print(datetime.datetime.now())
-    characters = string.ascii_uppercase + string.digits
-    code = ''.join(random.choice(characters) for _ in range(16))
-    print(code)
-    invites=[
-        {'inviteid': 1, 'orgid': 1, 'email': 'new@org.com', 'role': 'user', 'date': datetime.datetime(2024, 12, 5, 21, 47, 57, 150033), 'code': '7RZSKUWEB4IBY29G', 'registered': False},
-        {'inviteid': 2, 'orgid': 1, 'email': 'news@org.com', 'role': 'user', 'date': datetime.datetime(2024, 12, 5, 21, 47, 57, 150033), 'code': '8RZSKUWEB4IBY29G', 'registered': True},
-        {'inviteid': 3, 'orgid': 1, 'email': 'naa@org.com', 'role': 'Admin', 'date': datetime.datetime(2024, 12, 5, 21, 47, 57, 150033), 'code': '9RZSKUWEB4IBY29G', 'registered': False},
-        {'inviteid': 4, 'orgid': 1, 'email': 'op@org.com', 'role': 'user', 'date': datetime.datetime(2024, 12, 5, 21, 47, 57, 150033), 'code': '0RZSKUWEB4IBY29G', 'registered': True},
-        {'inviteid': 5, 'orgid': 1, 'email': 'oooo@org.com', 'role': 'Moderator', 'date': datetime.datetime(2024, 12, 5, 21, 47, 57, 150033), 'code': '1RZSKUWEB4IBY29G', 'registered': False},
-
-             ]
-    return render_template('OrgUserManager.html',invites=invites)
+    
+    return render_template('user_dashboard.html', questions=questions)
 
 
 @app.route('/invite_user',methods=["POST"])
@@ -182,125 +164,121 @@ def inviteUser():
 #     return redirect(url_for('profile'))
 
 
-@app.route('/login')
+@role_required()
+@app.route('/login', methods=["GET", "POST"])
 def login():
-    return render_template('Login.html')
+    if request.method == "POST":
+        username = request.form.get('email')
+        password = request.form.get('password')
+
+        if username == '' or password == '':
+            flash('Please fill the required fields')
+            return redirect(url_for('login'))
+
+        # Fetch user or organization based on the username (email)
+        user = User.query.filter_by(username=username).first()
+        org = Organizations.query.filter_by(orgemail=username).first()
+
+        if not user and not org:
+            flash('Please check your username and try again.')
+            return redirect(url_for('login'))
+
+        if user and not user.check_password(password):
+            flash('Please check your password and try again.')
+            return redirect(url_for('login'))
+        elif org and not org.check_password(password):
+            flash('Please check your password and try again.')
+            return redirect(url_for('login'))
+
+        # After successful login, set session user_id
+        if user:
+            session['user_id'] = user.userid
+            role = user.role  # Assuming `role` is a field in the User model
+        else:
+            session['user_id'] = org.orgid  # Assuming Organizations have an orgid
+            role = org.role  # Assuming `role` is a field in the Organizations model
+
+        # Redirect to respective dashboards based on role
+        if role == 'expert':
+            return redirect(url_for('expert_dashboard'))
+        elif role == 'user':
+            return redirect(url_for('user_dashboard'))
+        else:
+            flash('Role not recognized. Please contact support.')
+            return redirect(url_for('index'))
+
+    return render_template('login.html')
 
 
-@app.route('/login', methods=["POST"])
-def login_post():
-    username=request.form.get('email')
-    password=request.form.get('password')
-
-    if username=='' or password=='':
-        flash('Please fill the required fields')
-        return redirect(url_for('login'))
-    
-    user=User.query.filter_by(username=username).first()
-    org=Organizations.query.filter_by(orgemail=username).first()
-    print(username,password)
-    if not user and not org:
-        flash('Please check your username and try again.')
-        return redirect(url_for('login'))
-    if not user.check_password(password) and not org.check_password(password):
-        flash('Please check your password and try again.')
-        return redirect(url_for('login'))
-    #after successful login   
-    session['user_id']=user.userid
-    return redirect(url_for('index'))
-
-
-
-@app.route('/register',methods=["GET"])
+@app.route('/register',methods=["GET", "POST"])
 def register():
+    
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        password = request.form.get('password')
+        confirmpassword = request.form.get('confirmpassword')
+        created_at = datetime.datetime.now()
+
+        if username is None or email is None or password is None or confirmpassword is None:
+            flash('Please fill the required fields')
+            return redirect(url_for('register'))
+        elif password!=confirmpassword:
+            flash('Passwords do not match')
+            return redirect(url_for('register'))
+        elif User.query.filter_by(email=email).first():
+            flash('Email already exists')
+            return redirect(url_for('register'))
+        else:
+            user=User(username=username,email=email,phone=phone,password=password,created_at=created_at)
+            db.session.add(user)
+            db.session.commit()
+            flash(['You have successfully registered','success'])
+            return redirect(url_for('login'))
+
     return render_template('register.html')
 
-@app.route('/register/organization',methods=["GET"])
-def orgregister():
+
+@app.route('/register/organization',methods=["GET", "POST"])
+def OrganizationRegister():
+
+    if request.method == 'POST':
+        orgname = request.form.get('orgname')
+        orgemail = request.form.get('orgemail')
+        orgphone = request.form.get('orgphone')
+        orgpassword = request.form.get('orgpassword')
+        confirmpassword = request.form.get('confirmpassword')
+        orgwebsite = request.form.get('orgwebsite')
+        orgtype = request.form.get('orgtype')
+        orgdesc = request.form.get('orgdesc')
+        created_at = datetime.datetime.now()
+        orglogo = request.files['orglogo'].read()
+
+        if orgname is None or orgemail is None or orgpassword is None or confirmpassword is None or orgwebsite is None:
+            flash('Please fill the required fields')
+            return redirect(url_for('orgregister'))
+        elif orgpassword!=confirmpassword:
+            flash('Passwords do not match')
+            return redirect(url_for('orgregister'))
+        elif Organizations.query.filter_by(orgemail=orgemail).first():
+            flash('Email already exists')
+            return redirect(url_for('orgregister'))
+        else:
+            organization=Organizations(orgname=orgname,orglogo=orglogo,orgemail=orgemail,orgphone=orgphone,orgpassword=orgpassword,orgwebsite=orgwebsite,orgtype=orgtype,orgdesc=orgdesc,created_at=created_at)
+            db.session.add(organization)
+            db.session.commit()
+            flash(['You have successfully registered','success'])
+            return redirect(url_for('login'))
+
     return render_template('organizationRegister.html')
+
 
 @app.route('/image/<int:id>')
 def get_image(id):
     image = Organizations.query.get(id)
     return send_file(io.BytesIO(image.orglogo), mimetype='image/jpeg')
 
-@app.route('/register/organization',methods=["POST"])
-def orgregister_post():
-    orgname = request.form.get('orgname')
-    orgemail = request.form.get('orgemail')
-    orgphone = request.form.get('orgphone')
-    orgpassword = request.form.get('orgpassword')
-    confirmpassword = request.form.get('confirmpassword')
-    orgwebsite = request.form.get('orgwebsite')
-    orgtype = request.form.get('orgtype')
-    orgdesc = request.form.get('orgdesc')
-    created_at = datetime.datetime.now()
-    orglogo = request.files['orglogo'].read()
-
-
-    print(orgname,orglogo,orgemail,orgphone,orgpassword,confirmpassword,orgwebsite,orgtype,orgdesc,created_at)
-
-    if orgname is None or orgemail is None or orgpassword is None or confirmpassword is None or orgwebsite is None:
-        flash('Please fill the required fields')
-        return redirect(url_for('orgregister'))
-    elif orgpassword!=confirmpassword:
-        flash('Passwords do not match')
-        return redirect(url_for('orgregister'))
-    elif Organizations.query.filter_by(orgemail=orgemail).first():
-        flash('Email already exists')
-        return redirect(url_for('orgregister'))
-    else:
-        organization=Organizations(orgname=orgname,orglogo=orglogo,orgemail=orgemail,orgphone=orgphone,orgpassword=orgpassword,orgwebsite=orgwebsite,orgtype=orgtype,orgdesc=orgdesc,created_at=created_at)
-        db.session.add(organization)
-        db.session.commit()
-        flash(['You have successfully registered','success'])
-        return redirect(url_for('login'))
-
-
-@app.route('/register',methods=["POST"])
-def register_post():
-    firstname=request.form.get('first_name')
-    lastname=request.form.get('last_name')
-    email=request.form.get('email')
-    password=request.form.get('password')
-    confirmpassword=request.form.get('confirmpassword')
-    username=request.form.get('username')
-    invitecode=request.form.get('invitecode')
-
-    if username is None or password is None or email is None or  firstname is None or lastname is None or invitecode is None:
-        flash('Please fill the required fields')
-        return redirect(url_for('register'))
-    
-    if password!=confirmpassword:
-        flash('Passwords do not match')
-        return redirect(url_for('register'))
-    
-    if User.query.filter_by(username=username).first():
-        flash('Username already exists')
-        return redirect(url_for('register'))
-    
-    if User.query.filter_by(email=email).first():
-        flash('Email already exists')
-        return redirect(url_for('register'))
-    
-    if not Invites.query.filter_by(code=invitecode).first():
-        flash('Invalid invite code')
-        return redirect(url_for('register'))
-    
-    invite = Invites.query.filter_by(code=invitecode).first()
-    if invite.email != email:
-        flash('Email does not match the invite code')
-        return redirect(url_for('register'))
-    
-    orgid=invite.orgid
-    
-    user=User(firstname=firstname,lastname=lastname,username=username,email=email,password=password,organization=orgid)
-    invite.registered = True
-    db.session.add(user)
-    db.session.commit()
-    flash(['You have successfully registered','success'])
-    
-    return redirect(url_for('login'))
 
 # @app.route('/questiondetail',methods=['GET'])
 # def ques():

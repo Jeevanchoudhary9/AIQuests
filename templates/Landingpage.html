@@ -34,25 +34,6 @@
               <span class="text-xl font-bold">aiQuest</span>
             </a>
             <div class="relative">
-              <input
-                type="text"
-                placeholder="Search questions..."
-                class="w-96 pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-              <svg
-                class="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M21 21l-4.35-4.35m1.35-6.65A9 9 0 1 1 12 3a9 9 0 0 1 9 9z"
-                ></path>
-              </svg>
             </div>
           </div>
           <div class="flex items-center space-x-4">
@@ -64,7 +45,7 @@
               Log in{{user}}
             </a>
             <a
-              href="{{ url_for('register') }}"
+              href="{{ url_for('OrganizationRegister') }}"
               class="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600"
             >
               Join now{{user}}
@@ -98,7 +79,7 @@
         Get instant answers from AI and subject matter experts. Join your organization community today.
       </p>
       <div class="flex justify-center space-x-4">
-        <a href="{{ url_for('orgregister') }}"
+        <a href="{{ url_for('OrganizationRegister') }}"
           class="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition">
           Join the Community
         </a>

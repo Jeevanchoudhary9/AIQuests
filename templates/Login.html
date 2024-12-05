@@ -6,51 +6,50 @@
 
 {% block style %}
   <style>
-    /* Custom styles for the signup page */
     body {
-      background-color: #f3f4f6; /* Light grey background */
+      background-color: #f3f4f6;
     }
 
     .logincontainer {
-      margin-top: 50px; /* Margin from top */
+      margin-top: 50px;
     }
   </style>
 {% endblock %}
 
 {% block content %}
-  <div class="logincontainer max-w-md mx-auto">
-    <div class="text-center mb-8">
-      <h1 class="text-3xl font-bold">Welcome back</h1>
-      <p class="text-gray-600 mt-2">
-        Sign in to access your account
-      </p>
+<div class="logincontainer max-w-md mx-auto">
+  <div class="text-center mb-8">
+    <h1 class="text-3xl font-bold">Welcome back</h1>
+    <p class="text-gray-600 mt-2">Sign in to access your account</p>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-md p-8">
+    <div class="w-full">
+      <!-- Tabs for switching -->
+      <div class="relative flex flex-wrap px-1.5 py-1.5 list-none rounded-md bg-slate-100 mb-6">
+        <button 
+          id="user-tab" 
+          class="flex-auto text-center py-2 text-sm font-medium text-slate-700 bg-white rounded-md shadow-md transition-all ease-in-out cursor-pointer" 
+          onclick="showLogin('user')">
+          User Login
+        </button>
+        <button 
+          id="organization-tab" 
+          class="flex-auto text-center py-2 text-sm font-medium text-slate-600 bg-inherit transition-all ease-in-out cursor-pointer" 
+          onclick="showLogin('organization')">
+          Organization Login
+        </button>
+      </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-md p-8">
-      <a
-        href=""
-        class="w-full flex items-center justify-center space-x-2 bg-gray-900 text-white p-3 rounded-md hover:bg-gray-800 mb-6"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path d="M12 0C5.372 0 0 5.373 0 12c0 5.302 3.438 9.798 8.207 11.387.6.111.818-.257.818-.574v-2.072c-3.338.724-4.042-1.594-4.042-1.594-.553-1.409-1.347-1.785-1.347-1.785-1.101-.754.083-.739.083-.739 1.219.086 1.863 1.251 1.863 1.251 1.081 1.819 2.835 1.292 3.525.991.111-.782.423-1.292.768-1.592-2.666-.298-5.467-1.333-5.467-5.922 0-1.308.47-2.379 1.239-3.219-.124-.298-.537-1.491.124-3.107 0 0 1.005-.323 3.281 1.23a11.538 11.538 0 0 1 2.987-.397c1.014.004 2.031.137 3.006.397 2.275-1.553 3.279-1.23 3.279-1.23.662 1.616.249 2.809.124 3.107.77.84 1.239 1.911 1.239 3.219 0 4.607-2.804 5.624-5.476 5.922.432.372.815 1.106.815 2.219v3.293c0 .319.218.687.825.574 4.77-1.589 8.208-6.085 8.208-11.387 0-6.627-5.373-12-12-12z"/>
-        </svg>
-        <span>Continue with GitHub</span>
-      </a>
-
-      <div class="relative mb-6">
-        <div class="absolute inset-0 flex items-center">
-          <div class="w-full border-t border-gray-300"></div>
-        </div>
-        <div class="relative flex justify-center text-sm">
-          <span class="px-2 bg-white text-gray-500">Or continue with</span>
-        </div>
-      </div>
-
+    <!-- User Login Form -->
+    <div id="user-login" class="login-form">
       <form action="{{ url_for('login') }}" method="POST" class="space-y-6">
+        <input type="hidden" name="role" value="user">
         <div>
-          <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email address</label>
+          <label for="user-email" class="block text-sm font-medium text-gray-700 mb-2">Email address</label>
           <input
-            id="email"
+            id="user-email"
             type="email"
             name="email"
             class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -58,11 +57,10 @@
             required
           />
         </div>
-
         <div>
-          <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+          <label for="user-password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
           <input
-            id="password"
+            id="user-password"
             type="password"
             name="password"
             class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -70,33 +68,65 @@
             required
           />
         </div>
-
-        <div class="flex items-center justify-between">
-          <div class="flex items-center">
-            <input
-              type="checkbox"
-              id="remember_me"
-              name="remember_me"
-              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label for="remember_me" class="ml-2 block text-sm text-gray-700">Remember me</label>
-          </div>
-          <a href="" class="text-sm font-medium text-blue-600 hover:text-blue-500">
-            Forgot password?
-          </a>
-        </div>
-
-        <button
-          type="submit"
-          class="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700"
-        >
-          Sign in
-        </button>
+        <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700">Sign in</button>
       </form>
     </div>
 
-    <p class="text-center mt-6 text-gray-600">
-      Don't have an account? <a href="{{ url_for('register') }}" class="text-blue-600 hover:text-blue-500">Sign up</a>
-    </p>
+    <!-- Organization Login Form -->
+    <div id="organization-login" class="hidden login-form">
+      <form action="{{ url_for('login') }}" method="POST" class="space-y-6">
+        <input type="hidden" name="role" value="organization">
+        <div>
+          <label for="org-email" class="block text-sm font-medium text-gray-700 mb-2">Organization Email</label>
+          <input
+            id="org-email"
+            type="email"
+            name="email"
+            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="org@example.com"
+            required
+          />
+        </div>
+        <div>
+          <label for="org-password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+          <input
+            id="org-password"
+            type="password"
+            name="password"
+            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="••••••••"
+            required
+          />
+        </div>
+        <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700">Sign in</button>
+      </form>
+    </div>
   </div>
+</div>
+
+<script>
+  function showLogin(type) {
+    const userTab = document.getElementById("user-tab");
+    const orgTab = document.getElementById("organization-tab");
+    const userLogin = document.getElementById("user-login");
+    const orgLogin = document.getElementById("organization-login");
+
+    if (type === "user") {
+      userTab.classList.add("bg-white", "text-slate-700", "shadow-md");
+      orgTab.classList.remove("bg-white", "text-slate-700", "shadow-md");
+
+      userLogin.classList.remove("hidden");
+      orgLogin.classList.add("hidden");
+    } else {
+      orgTab.classList.add("bg-white", "text-slate-700", "shadow-md");
+      userTab.classList.remove("bg-white", "text-slate-700", "shadow-md");
+
+      orgLogin.classList.remove("hidden");
+      userLogin.classList.add("hidden");
+    }
+  }
+
+  // Set default view to User Login
+  document.addEventListener("DOMContentLoaded", () => showLogin("user"));
+</script>
 {% endblock %}
