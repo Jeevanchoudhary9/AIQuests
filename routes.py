@@ -8,8 +8,8 @@ import random
 import ollama
 import re
 import humanize
-from transformers import BertTokenizer, BertModel
-from werkzeug.security import generate_password_hash
+# from transformers import BertTokenizer, BertModel
+from werkzeug.security import generate_password_hash, check_password_hash
 import torch
 import io
 import random
@@ -22,19 +22,20 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
 import threading
+from flask import jsonify
 
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-model = BertModel.from_pretrained('bert-base-uncased')
+# tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+# model = BertModel.from_pretrained('bert-base-uncased')
 
-def get_bert_embedding(text):
-    """
-    Generate BERT embedding for the given text.
-    """
-    inputs = bert_tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
-    outputs = bert_model(**inputs)
-    # Use the mean of the last hidden state as the embedding
-    embedding = outputs.last_hidden_state.mean(dim=1).detach().numpy()
-    return embedding
+# def get_bert_embedding(text):
+#     """
+#     Generate BERT embedding for the given text.
+#     """
+#     inputs = bert_tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
+#     outputs = bert_model(**inputs)
+#     # Use the mean of the last hidden state as the embedding
+#     embedding = outputs.last_hidden_state.mean(dim=1).detach().numpy()
+#     return embedding
 
 
 def role_required(role=None):
@@ -65,6 +66,7 @@ def role_required(role=None):
             return func(*args, **kwargs)
         return inner
     return decorator
+
 
 def send_email(to_email, subject, html_content,attachment=None):
     # Gmail SMTP server details
@@ -111,12 +113,13 @@ def send_email(to_email, subject, html_content,attachment=None):
     server.quit()
 
 
-
+# NOTE: This route takes to landing page
 @app.route('/')
 def index():
     return render_template('Landingpage.html')
 
 
+# NOTE: Organization dashboard
 @app.route('/dashboard/organization')
 def organization_dashboard():
     questions = [
@@ -125,11 +128,12 @@ def organization_dashboard():
         {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
     ]
 
-    return render_template('Dashboard.html', questions=questions)
+    return render_template('OrganizationDashboard.html', questions=questions)
 
 
-@app.route('/dashboard/expert')
-@role_required('expert')
+# NOTE: 
+@app.route('/dashboard/moderator')
+@role_required('moderator')
 def expert_dahboard():
     questions = [
         {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
@@ -194,6 +198,7 @@ def inviteUser():
     flash(['Mail sent successfully','success'])
 
     return redirect(url_for('userManager'))
+
 
 @app.route('/inivtedmail')
 def invitedmail(email=None,code=None,role=None):
@@ -282,7 +287,8 @@ def UserManager():
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
-    
+
+
 @app.route('/UserManager', methods=['DELETE'])
 def UserManager_delete():
     print(request.get_json())
@@ -307,9 +313,6 @@ def UserManager_delete():
         db.session.commit()
 
     return jsonify({'success': True})
-
-
-
 
 
 # @app.route('/profile')
@@ -349,51 +352,35 @@ def UserManager_delete():
 #     return redirect(url_for('profile'))
 
 
-@role_required()
-@app.route('/login', methods=["GET", "POST"])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == "POST":
-        username = request.form.get('email')
+    if request.method == 'POST':
+        role = request.form.get('role')
+        email = request.form.get('email')
         password = request.form.get('password')
+        
+        if role == 'user':
+            user = User.query.filter_by(email=email).first()
+            try:
+                if user and user.check_password(password):
+                    session['user_id'] = user.userid
+                    flash('User login successful!')
+                    return redirect(url_for('dashboard'))
+                flash('Invalid user credentials. Please try again.')
+            except:
+                organization = Organizations.query.filter_by(orgemail=email).first()
+                if organization:
+                    flash('try switching to organization login')
 
-        if username == '' or password == '':
-            flash('Please fill the required fields')
-            return redirect(url_for('login'))
-
-        # Fetch user or organization based on the username (email)
-        user = User.query.filter_by(username=username).first()
-        org = Organizations.query.filter_by(orgemail=username).first()
-
-        if not user and not org:
-            flash('Please check your username and try again.')
-            return redirect(url_for('login'))
-
-        if user and not user.check_password(password):
-            flash('Please check your password and try again.')
-            return redirect(url_for('login'))
-        elif org and not org.check_password(password):
-            flash('Please check your password and try again.')
-            return redirect(url_for('login'))
-
-        # After successful login, set session user_id
-        if user:
-            session['user_id'] = user.userid
-            role = user.role  # Assuming `role` is a field in the User model
-        else:
-            session['user_id'] = org.orgid  # Assuming Organizations have an orgid
-            role = org.role  # Assuming `role` is a field in the Organizations model
-
-        # Redirect to respective dashboards based on role
-        if role == 'expert':
-            return redirect(url_for('expert_dashboard'))
-        elif role == 'user':
-            return redirect(url_for('user_dashboard'))
-        else:
-            flash('Role not recognized. Please contact support.')
-            return redirect(url_for('index'))
+        elif role == 'organization':
+            organization = Organizations.query.filter_by(orgemail=email).first()
+            if organization and check_password_hash(organization.orgpassword, password):
+                session['org_id'] = organization.orgid
+                flash('Organization login successful!')
+                return redirect(url_for('dashboard'))
+            flash('Invalid organization credentials. Please try again.')
 
     return render_template('login.html')
-
 
 @app.route('/register',methods=["GET", "POST"])
 def register(code=None, email=None):
@@ -439,7 +426,8 @@ def register(code=None, email=None):
         
         orgid=invite.orgid
         
-        user=User(firstname=firstname,lastname=lastname,username=username,email=email,password=password,organization=orgid)
+        user=User(firstname=firstname,lastname=lastname,username=username,
+                  email=email,password=generate_password_hash(password),organization=orgid)
         invite.registered = True
         db.session.add(user)
         db.session.commit()
@@ -475,7 +463,8 @@ def OrganizationRegister():
             flash('Email already exists')
             return redirect(url_for('orgregister'))
         else:
-            organization=Organizations(orgname=orgname,orglogo=orglogo,orgemail=orgemail,orgphone=orgphone,orgpassword=orgpassword,orgwebsite=orgwebsite,orgtype=orgtype,orgdesc=orgdesc,created_at=created_at)
+            organization=Organizations(orgname=orgname,orglogo=orglogo,orgemail=orgemail,orgphone=orgphone,
+                                       orgpassword=generate_password_hash(orgpassword),orgwebsite=orgwebsite,orgtype=orgtype,orgdesc=orgdesc,created_at=created_at)
             db.session.add(organization)
             db.session.commit()
             flash(['You have successfully registered','success'])
@@ -663,6 +652,93 @@ def ask_question():
         flash(['Your question has been posted successfully!', 'success'])
         return redirect(url_for('ask_question'))  # Redirect to the same page or another page
     return render_template('AskQuestion.html')
+
+@app.route('/<int:answer_id>/vote', methods=["POST"])
+def vote(answer_id):
+    if request.method != "POST":
+        return jsonify({"error": "Invalid request"}), 400
+
+    # Extract form data
+    vote_type = int(request.form.get("vote"))  # 1 for upvote, -1 for downvote
+    user_id = int(request.form.get("user_id"))  # TODO: Get it from Session ID
+
+    # Fetch existing vote if it exists
+    vote_entry = Votes.query.filter_by(answerid=answer_id, userid=user_id).first()
+
+    if vote_entry:
+        # Toggle the vote state or remove the vote
+        if vote_entry.vote == vote_type:
+            vote_entry.vote = 0  # Remove vote if it's the same as current
+        else:
+            vote_entry.vote = vote_type  # Update to the new vote type
+
+        db.session.commit()
+        return jsonify({"message": "Vote updated successfully", "vote": vote_entry.vote})
+
+    # Check if the answer exists
+    answer = Answers.query.filter_by(answerid=answer_id).first()
+    if not answer:
+        return jsonify({"error": "Answer not found"}), 404
+
+    # Create a new vote entry
+    new_vote = Votes(
+        vote=vote_type,
+        questionid=answer.questionid,
+        answerid=answer_id,
+        userid=user_id,
+        date=datetime.datetime.now()
+    )
+    db.session.add(new_vote)
+    db.session.commit()
+
+    return jsonify({
+        "message": "Vote created successfully",
+        "vote": new_vote.vote,
+        "questionid": new_vote.questionid
+    })
+
+
+@app.route('/<int:question_id>/plusone', methods=["POST"])
+def plus_one(question_id):
+    if request.method == "POST":
+        user_id = int(request.form.get("user_id")) # TODO: Get it from Session ID
+        plus_one = int(request.form.get("plus_one"))
+        
+        plusone_entry = Plus_ones.query.filter_by(questionid=question_id, userid=user_id).first()
+        
+        if plusone_entry:
+            if plus_one == 1 and vote_entry.vote == 0:
+                vote_entry.vote = 1
+            
+            db.session.commit()
+            return jsonify({"message": "Vote updated successfully", "vote": vote_entry.vote})
+        
+        else:
+            answer = Answers.query.filter_by(answerid=answer_id).first()
+            if not answer:
+                return jsonify({"error": "Answer not found"}), 404
+            
+            question_id = answer.questionid
+            
+            # Create a new vote entry
+            new_vote = Votes(
+                vote=vote_type,
+                questionid=question_id,
+                answerid=answer_id,
+                userid=user_id,
+                date=datetime.datetime.now()
+            )
+            db.session.add(new_vote)
+            db.session.commit()
+            return jsonify({
+                "message": "Vote created successfully",
+                "vote": new_vote.vote,
+                "questionid": new_vote.questionid
+            })
+    
+    return jsonify({"error": "Invalid request"}), 400
+    
+
 
 
 # @app.route('/answers', methods=['GET', 'POST', 'DELETE', 'PUT'])

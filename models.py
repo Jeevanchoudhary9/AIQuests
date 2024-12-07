@@ -16,19 +16,12 @@ class User(db.Model):
     lastname = db.Column(db.String(20))
     email = db.Column(db.String(50), nullable=False, unique=True)
     username = db.Column(db.String(50), nullable=False, unique=True)
-    password = db.Column(db.String(1024), nullable=False)
+    passhash = db.Column(db.String(1024), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='user')
     organization = db.Column(db.Integer, db.ForeignKey('organizations.orgid'), nullable=True)
      
-    @property
-    def password(self):
-        raise AttributeError('Password is not a readable attribute')
-    
-    @password.setter
-    def password(self, password):
-        self.password = generate_password_hash(password)
-
     def check_password(self, password):
-        return check_password_hash(self.password, password)
+        return check_password_hash(self.passhash, password)
     
     def __repr__(self):
         return f'<User {self.userid}>'
@@ -47,7 +40,7 @@ class User(db.Model):
         }
 
 
-
+# NOTE: Store all the questions
 class Questions(db.Model):
     __tablename__ = 'Questions'
     questionid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
@@ -57,6 +50,7 @@ class Questions(db.Model):
     userid = db.Column(db.Integer, db.ForeignKey('user.userid'), nullable=False)
     official_answer = db.Column(db.Integer, db.ForeignKey('answers.answerid'), nullable=False)
     date = db.Column(db.DateTime, nullable=False)
+    orgid = db.Column(db.Integer, db.ForeignKey('Organizations.orgid'), nullable=True)
     ai_answer = db.Column(db.Boolean, nullable=False,default=False)
     tags = db.Column(db.JSON, nullable=False)
     
@@ -77,6 +71,7 @@ class Questions(db.Model):
         }
 
 
+# NOTE: Plus_ones is a table to store the plus ones for a question
 class Plus_ones(db.Model):
     __tablename__ = 'plus_ones'
     plusoneid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
@@ -85,12 +80,13 @@ class Plus_ones(db.Model):
     date = db.Column(db.DateTime, nullable=False)
 
 
+# NOTE: List all answers association with qustions
 class Answers(db.Model):
     __tablename__ = 'answers'
     answerid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
     answer = db.Column(db.String(200), nullable=False)
-    upvotes = db.Column(db.Integer, nullable=False)
-    downvotes = db.Column(db.Integer, nullable=False)
+    upvotes = db.Column(db.Integer, nullable=False) # Total Number of down votes
+    downvotes = db.Column(db.Integer, nullable=False) # Total Number of upvotes
     questionid = db.Column(db.Integer, db.ForeignKey('Questions.questionid'), nullable=False)
     userid = db.Column(db.Integer, db.ForeignKey('user.userid'), nullable=False)
     marked_as_official = db.Column(db.Boolean, nullable=False, default=False)
@@ -117,10 +113,11 @@ class Answers(db.Model):
         }
     
 
+# NOTE: Store upvotes and downvotes for a question
 class Votes(db.Model):
     __tablename__ = 'votes'
     voteid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
-    vote = db.Column(db.String(10), nullable=False)
+    vote = db.Column(db.Integer, nullable=False)
     questionid = db.Column(db.Integer, db.ForeignKey('Questions.questionid'), nullable=False)
     answerid = db.Column(db.Integer, db.ForeignKey('answers.answerid'), nullable=False)
     userid = db.Column(db.Integer, db.ForeignKey('user.userid'), nullable=False)
@@ -166,6 +163,7 @@ class Votes(db.Model):
 #         }
 
 
+# NOTE: List down all the organizations with their credentials
 class Organizations(db.Model):
     __tablename__ = 'organizations'
     orgid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
@@ -203,6 +201,7 @@ class Organizations(db.Model):
         }
 
 
+# NOTE: Moderators list with their Organization and office location
 class Moderators(db.Model):
     __tablename__ = 'moderator'
     modid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
@@ -228,6 +227,7 @@ class Moderators(db.Model):
         }
 
 
+# NOTE: Labels for questions and their association with moderator
 class Labels(db.Model):
     __tablename__ = 'labels'
     labelid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
@@ -277,9 +277,6 @@ class Invites(db.Model):
             'code': self.code,
             'registered': self.registered
         }
-    
-
-
         
 with app.app_context():
     db.create_all()
