@@ -6,18 +6,15 @@
 
 {% block style %}
   <style>
-    /* Custom styles for the signup page */
-    body {
-      background-color: #f3f4f6; /* Light grey background */
-    }
 
     .askquestioncontainer {
-      margin-top: 50px; /* Margin from top */
+      padding-top: 50px; /* Margin from top */
     }
   </style>
 {% endblock %}
 
 {% block content %}
+<div class="bg-gradient-to-b from-blue-50 to-white">
   <div class="askquestioncontainer max-w-4xl mx-auto">
     <h1 class="text-3xl font-bold mb-8">Ask a Question</h1>
 
@@ -97,5 +94,6 @@
         <li>• Proofread before posting</li>
       </ul>
     </div>
+  </div>
   </div>
 {% endblock %}

@@ -189,8 +189,8 @@ def inviteUser():
     body = render_template('emailinvite.html',email=email,code=code,role=role,register_url=register_url,browser_url=browser_url)
 
     # Start a new thread to send the email
-    thread = threading.Thread(target=send_email, args=(email, subject, body))
-    thread.start()
+    # thread = threading.Thread(target=send_email, args=(email, subject, body))
+    # thread.start()
     flash(['Mail sent successfully','success'])
 
     return redirect(url_for('userManager'))
@@ -404,28 +404,48 @@ def register(code=None, email=None):
         print(code)
     
     if request.method == 'POST':
-        username = request.form.get('username')
-        email = request.form.get('email')
-        phone = request.form.get('phone')
-        password = request.form.get('password')
-        confirmpassword = request.form.get('confirmpassword')
-        created_at = datetime.datetime.now()
+        firstname=request.form.get('first_name')
+        lastname=request.form.get('last_name')
+        email=request.form.get('email')
+        password=request.form.get('password')
+        confirmpassword=request.form.get('confirmpassword')
+        username=request.form.get('username')
+        invitecode=request.form.get('invitecode')
 
-        if username is None or email is None or password is None or confirmpassword is None:
+        if username is None or password is None or email is None or  firstname is None or lastname is None or invitecode is None:
             flash('Please fill the required fields')
             return redirect(url_for('register'))
-        elif password!=confirmpassword:
+        
+        if password!=confirmpassword:
             flash('Passwords do not match')
             return redirect(url_for('register'))
-        elif User.query.filter_by(email=email).first():
+        
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists')
+            return redirect(url_for('register'))
+        
+        if User.query.filter_by(email=email).first():
             flash('Email already exists')
             return redirect(url_for('register'))
-        else:
-            user=User(username=username,email=email,phone=phone,password=password,created_at=created_at)
-            db.session.add(user)
-            db.session.commit()
-            flash(['You have successfully registered','success'])
-            return redirect(url_for('login'))
+        
+        if not Invites.query.filter_by(code=invitecode).first():
+            flash('Invalid invite code')
+            return redirect(url_for('register'))
+        
+        invite = Invites.query.filter_by(code=invitecode).first()
+        if invite.email != email:
+            flash('Email does not match the invite code')
+            return redirect(url_for('register'))
+        
+        orgid=invite.orgid
+        
+        user=User(firstname=firstname,lastname=lastname,username=username,email=email,password=password,organization=orgid)
+        invite.registered = True
+        db.session.add(user)
+        db.session.commit()
+        flash(['You have successfully registered','success'])
+        
+        return redirect(url_for('login'))
 
     return render_template('register.html',code=code,email=email)
 

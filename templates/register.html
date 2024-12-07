@@ -6,18 +6,14 @@
 
 {% block style %}
   <style>
-    /* Custom styles for the signup page */
-    body {
-      background-color: #f3f4f6; /* Light grey background */
-    }
-
     .registercontainer {
-      margin-top: 50px; /* Margin from top */
+      padding-top: 50px; /* Margin from top */
     }
   </style>
 {% endblock %}
 
 {% block content %}
+<div class="bg-gradient-to-b from-blue-50 to-white">
   <div class="registercontainer max-w-md mx-auto">
     <div class="text-center mb-8">
       <h1 class="text-3xl font-bold">Create your account</h1>
@@ -80,7 +76,11 @@
                 name="username"
                 class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="username"
-                value=""
+                {% if code %}
+                value="{{ email }}"
+                {% else %}
+                  value=""
+                {% endif %}
               />
             </div>
             <div>
@@ -167,4 +167,5 @@
       <a href="{{ url_for('login') }}" class="text-blue-600 hover:text-blue-500">Sign in</a>
     </p>
   </div>
+</div>
 {% endblock %}

@@ -7,18 +7,15 @@
 
 {% block style %}
   <style>
-    /* Custom styles for the signup page */
-    body {
-      background-color: #f3f4f6; /* Light grey background */
-    }
 
     .homecontainer {
-      margin-top: 50px; /* Margin from top */
+      padding-top: 50px; /* Margin from top */
     }
   </style>
 {% endblock %}
 
 {% block content %}
+<div class="bg-gradient-to-b from-blue-50 to-white">
   <div class="homecontainer max-w-6xl mx-auto">
     <div class="text-center mb-12">
       <h1 class="text-4xl font-bold mb-4">
@@ -90,5 +87,6 @@
         {% endfor %}
       </div>
     </div>
+  </div>
   </div>
 {% endblock %}

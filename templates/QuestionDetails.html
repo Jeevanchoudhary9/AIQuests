@@ -2,9 +2,13 @@
 {% endblock %} {% block style %}
 <style>
   /* Custom styles for the question detail page */
+  .QuestionDetailContainer {
+    padding-top: 50px; /* Margin from top */
+  }
 </style>
 {% endblock %} {% block content %}
-<div class="max-w-6xl mx-auto">
+<div class="bg-gradient-to-b from-blue-50 to-white">
+<div class="QuestionDetailContainer max-w-6xl mx-auto">
   <div class="bg-white rounded-lg shadow-md p-6 mb-6">
     <h1 class="text-2xl font-bold mb-4">{{question.question_title}}</h1>
     <div class="flex items-center text-sm text-gray-500 mb-6">
@@ -123,5 +127,6 @@
       </button>
     </form>
   </div>
+</div>
 </div>
 {% endblock %}
