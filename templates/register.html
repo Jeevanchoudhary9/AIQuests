@@ -90,7 +90,11 @@
                 name="email"
                 class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="you@example.com"
-                value=""
+                {% if code %}
+                value="{{ email }}"
+                {% else %}
+                  value=""
+                {% endif %}
               />
             </div>
           </div>

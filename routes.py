@@ -177,7 +177,7 @@ def inviteUser():
     db.session.add(invite)
     db.session.commit()
     flash(['Invited successfully','success'])
-    register_url=url_for('register', code=code, _external=True)
+    register_url=url_for('register', code=code,email=email, _external=True)
     print(register_url)
 
     # email sent part 
@@ -195,7 +195,7 @@ def inviteUser():
 
 @app.route('/inivtedmail')
 def invitedmail():
-    register_url=url_for('register', code="1234 5678 9012 3456", _external=True)
+    register_url=url_for('register', code="1234 5678 9012 3456",email="jeevanchoudhary2421@gmail.com", _external=True)
     print(register_url)
     return render_template('emailinvite.html',email="jeevanchoudhary2421@gmail.com",code="1234 5678 9012 3456",role="admin",register_url=register_url)
 
@@ -382,10 +382,11 @@ def login():
 
 
 @app.route('/register',methods=["GET", "POST"])
-def register(code=None):
+def register(code=None, email=None):
 
     if request.method == 'GET':
         code = request.args.get('code')
+        email = request.args.get('email')
         print(code)
     
     if request.method == 'POST':
@@ -412,7 +413,7 @@ def register(code=None):
             flash(['You have successfully registered','success'])
             return redirect(url_for('login'))
 
-    return render_template('register.html',code=code)
+    return render_template('register.html',code=code,email=email)
 
 
 @app.route('/register/organization',methods=["GET", "POST"])
