@@ -39,34 +39,31 @@ from flask import jsonify
 
 
 def role_required(role=None):
-    """
-    A decorator to ensure the user is authenticated and optionally has a specific role.
-    :param role: (Optional) The required role to access the route. If None, return the role of the current user.
-    """
     def decorator(func):
         @wraps(func)
         def inner(*args, **kwargs):
-            if 'user_id' not in session:
-                flash('Please login to continue')
-                return redirect(url_for('index'))
-            
-            user = User.query.filter_by(userid=session['user_id']).first()
-            if not user:
-                flash('User not found. Please login again.')
-                return redirect(url_for('index'))
-            
-            if role:
-                if user.role != role:
-                    flash('You are not authorized to access this page')
-                    return redirect(url_for('index'))
-            else:
-                # Pass the user's role to the wrapped function
-                kwargs['user_role'] = user.role
-            
-            return func(*args, **kwargs)
+            # Common variables
+            user_id = session.get('user_id')
+            org_id = session.get('org_id')
+
+            # Role-specific checks
+            if role == "organization" and org_id:
+                organization = Organizations.query.filter_by(orgid=org_id).first()
+                if organization:
+                    return func(*args, **kwargs)
+            elif role == "moderator" and user_id:
+                moderator = User.query.filter_by(userid=user_id).first()
+                if moderator and moderator.role == "moderator":
+                    return func(*args, **kwargs)
+            elif role == "user" and user_id:
+                user = User.query.filter_by(userid=user_id).first()
+                if user:
+                    return func(*args, **kwargs)
+
+            flash("You do not have permission to access this page.")
+            return redirect(url_for('login'))
         return inner
     return decorator
-
 
 def send_email(to_email, subject, html_content,attachment=None):
     # Gmail SMTP server details
@@ -141,11 +138,11 @@ def moderator_dashboard():
         {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
     ]
 
-    return render_template('expert_dahboard.html', questions=questions)
+    return render_template('ModeratorDashboard.html', questions=questions)
 
 
 @app.route('/dashboard/user')
-@role_required('user')
+@role_required(role="user")
 def user_dashboard():
     questions = [
         {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
@@ -364,10 +361,10 @@ def login():
             if user and check_password_hash(user.passhash, password):
                 session['user_id'] = user.userid
                 if user.role == 'moderator':
-                    flash('Moderator login successful!')
+                    flash(['Moderator login successful!', 'success'])
                     return redirect(url_for('moderator_dashboard'))
                 elif user.role == 'user':
-                    flash('User login successful!')
+                    flash(['User login successful!', 'success'])
                     return redirect(url_for('user_dashboard'))
             organization = Organizations.query.filter_by(orgemail=email).first()
             if organization:

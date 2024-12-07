@@ -206,7 +206,7 @@ class Moderators(db.Model):
     __tablename__ = 'moderator'
     modid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
     userid = db.Column(db.Integer, db.ForeignKey('user.userid'), nullable=False)
-    subject = db.Column(db.Integer, db.ForeignKey('labels.labelid'), nullable=False)
+    # subject = db.Column(db.Integer, db.ForeignKey('labels.labelid'), nullable=False)
     orgid = db.Column(db.Integer, db.ForeignKey('organizations.orgid'), nullable=False)
     date = db.Column(db.DateTime, nullable=False)
     officelocation = db.Column(db.String(200), nullable=False)
@@ -250,6 +250,16 @@ class Labels(db.Model):
             'orgid': self.orgid,
             'date': self.date
         }
+    
+class ModeratorLabel(db.Model):
+    __tablename__ ='moderatorlabel'
+    modlabelid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
+    modid = db.Column(db.Integer, db.ForeignKey('moderator.modid'), nullable=False)
+    labelid = db.Column(db.Integer, db.ForeignKey('labels.labelid'), nullable=False)
+    date = db.Column(db.DateTime, nullable=False)
+
+    def __repr__(self):
+        return f'<Moderator Label {self.modlabelid}>'
     
 class Invites(db.Model):
     __tablename__ = 'invites'
