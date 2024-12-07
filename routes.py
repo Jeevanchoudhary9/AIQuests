@@ -707,7 +707,7 @@ def plus_one(question_id):
         plusone_entry = Plus_ones.query.filter_by(questionid=question_id, userid=user_id).first()
         
         if plusone_entry:
-            if plus_one == 1 and vote_entry.vote == 0:
+            if plus_one == 1 and plusone_entry.vote == 0:
                 vote_entry.vote = 1
             
             db.session.commit()
