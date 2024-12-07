@@ -134,7 +134,7 @@ def organization_dashboard():
 # NOTE: 
 @app.route('/dashboard/moderator')
 @role_required('moderator')
-def expert_dahboard():
+def moderator_dashboard():
     questions = [
         {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
         {'id': 2, 'title': 'Best practices for React state management?', 'short_description': 'Looking for suggestions on managing state...', 'time_ago': '1 day', 'answer_count': 3, 'asker_name': 'Jane Smith'},
@@ -361,16 +361,20 @@ def login():
         
         if role == 'user':
             user = User.query.filter_by(email=email).first()
-            try:
-                if user and user.check_password(password):
-                    session['user_id'] = user.userid
+            if user and check_password_hash(user.passhash, password):
+                session['user_id'] = user.userid
+                if user.role == 'moderator':
+                    flash('Moderator login successful!')
+                    return redirect(url_for('moderator_dashboard'))
+                elif user.role == 'user':
                     flash('User login successful!')
-                    return redirect(url_for('dashboard'))
+                    return redirect(url_for('user_dashboard'))
+            organization = Organizations.query.filter_by(orgemail=email).first()
+            if organization:
+                flash('Try switching to organization login')
+            else:
                 flash('Invalid user credentials. Please try again.')
-            except:
-                organization = Organizations.query.filter_by(orgemail=email).first()
-                if organization:
-                    flash('try switching to organization login')
+
 
         elif role == 'organization':
             organization = Organizations.query.filter_by(orgemail=email).first()
@@ -427,7 +431,7 @@ def register(code=None, email=None):
         orgid=invite.orgid
         
         user=User(firstname=firstname,lastname=lastname,username=username,
-                  email=email,password=generate_password_hash(password),organization=orgid)
+                  email=email,passhash=generate_password_hash(password),organization=orgid)
         invite.registered = True
         db.session.add(user)
         db.session.commit()
@@ -702,39 +706,23 @@ def vote(answer_id):
 def plus_one(question_id):
     if request.method == "POST":
         user_id = int(request.form.get("user_id")) # TODO: Get it from Session ID
-        plus_one = int(request.form.get("plus_one"))
         
         plusone_entry = Plus_ones.query.filter_by(questionid=question_id, userid=user_id).first()
         
         if plusone_entry:
-            if plus_one == 1 and plusone_entry.vote == 0:
-                vote_entry.vote = 1
-            
+            db.session.delete(plusone_entry)
             db.session.commit()
-            return jsonify({"message": "Vote updated successfully", "vote": vote_entry.vote})
+            return jsonify({"message": "Plus one removed successfully", "status": "removed"})
         
         else:
-            answer = Answers.query.filter_by(answerid=answer_id).first()
-            if not answer:
-                return jsonify({"error": "Answer not found"}), 404
-            
-            question_id = answer.questionid
-            
-            # Create a new vote entry
-            new_vote = Votes(
-                vote=vote_type,
+            new_plusone = Plus_ones(
                 questionid=question_id,
-                answerid=answer_id,
                 userid=user_id,
                 date=datetime.datetime.now()
             )
-            db.session.add(new_vote)
+            db.session.add(new_plusone)
             db.session.commit()
-            return jsonify({
-                "message": "Vote created successfully",
-                "vote": new_vote.vote,
-                "questionid": new_vote.questionid
-            })
+            return jsonify({"message": "Plus one added successfully", "status": "added"})
     
     return jsonify({"error": "Invalid request"}), 400
     
@@ -789,7 +777,7 @@ def plus_one(question_id):
 
 
 
-# @app.route('/logout')
-# def logout():
-#     session.pop('user_id',None)
-#     return redirect(url_for('login'))
+@app.route('/logout')
+def logout():
+    session.pop('user_id',None)
+    return redirect(url_for('login'))
