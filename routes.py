@@ -15,6 +15,13 @@ import io
 import random
 import string
 from functools import wraps
+from email import encoders
+from email.mime.application import MIMEApplication
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import smtplib
+import threading
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 model = BertModel.from_pretrained('bert-base-uncased')
@@ -58,6 +65,51 @@ def role_required(role=None):
             return func(*args, **kwargs)
         return inner
     return decorator
+
+def send_email(to_email, subject, html_content,attachment=None):
+    # Gmail SMTP server details
+    smtp_server = 'smtp.gmail.com'
+    smtp_port = 587  # Gmail SMTP port
+
+    # Sender's Gmail address and password
+    sender_email = 'ai.aiquest@gmail.com' #enter your email
+    sender_password = 'stpa vqvq oqog fykk' #enter code > you can get it at https://myaccount.google.com/apppasswords or search for "app password" in google account > create a new app code > format "wxyz wxyz wxyz wxyz" > enter it here
+
+    # Create a MIME multipart message
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = to_email
+    msg['Subject'] = subject
+
+    if attachment:
+        # Attach file
+        # part = MIMEBase('application', 'octet-stream')
+        # part.set_payload(open(attachment, 'rb').read())
+        # encoders.encode_base64(part)
+        # part.add_header('Content-Disposition', f'attachment; filename={attachment}')
+        # msg.attach(part)
+
+        pdf_part = MIMEApplication(attachment, _subtype='pdf')
+        pdf_part.add_header('Content-Disposition', 'attachment', filename='report.pdf')
+        msg.attach(pdf_part)
+
+
+    # Attach HTML content
+    msg.attach(MIMEText(html_content, 'html','utf-8'))
+
+    
+
+    # Connect to Gmail's SMTP server
+    server = smtplib.SMTP(smtp_server, smtp_port)
+    server.starttls()  # Start TLS encryption
+    server.login(sender_email, sender_password)  # Login to Gmail
+
+    # Send email
+    server.sendmail(sender_email, to_email, msg.as_string())
+
+    # Close SMTP connection
+    server.quit()
+
 
 
 @app.route('/')
@@ -116,14 +168,36 @@ def inviteUser():
 
     characters = string.ascii_uppercase + string.digits
     code = ''.join(random.choice(characters) for _ in range(16))
+
+    # Format the code as XXXX XXXX XXXX XXXX
+    code = ' '.join([code[i:i+4] for i in range(0, len(code), 4)])
+
     print(email,role,code)
     invite = Invites(email=email,role=role,code=code,orgid=orgid,date=date)
     db.session.add(invite)
     db.session.commit()
     flash(['Invited successfully','success'])
+    register_url=url_for('register', code=code, _external=True)
+    print(register_url)
 
+    # email sent part 
+    email = email
+    print(email)
+    subject = "You've been invited to join AIQuest"
+    body = render_template('emailinvite.html',email=email,code=code,role=role,register_url=register_url)
+
+    # Start a new thread to send the email
+    thread = threading.Thread(target=send_email, args=(email, subject, body))
+    thread.start()
+    flash(['Mail sent successfully','success'])
 
     return redirect(url_for('userManager'))
+
+@app.route('/inivtedmail')
+def invitedmail():
+    register_url=url_for('register', code="1234 5678 9012 3456", _external=True)
+    print(register_url)
+    return render_template('emailinvite.html',email="jeevanchoudhary2421@gmail.com",code="1234 5678 9012 3456",role="admin",register_url=register_url)
 
 
 
@@ -308,7 +382,11 @@ def login():
 
 
 @app.route('/register',methods=["GET", "POST"])
-def register():
+def register(code=None):
+
+    if request.method == 'GET':
+        code = request.args.get('code')
+        print(code)
     
     if request.method == 'POST':
         username = request.form.get('username')
@@ -334,7 +412,7 @@ def register():
             flash(['You have successfully registered','success'])
             return redirect(url_for('login'))
 
-    return render_template('register.html')
+    return render_template('register.html',code=code)
 
 
 @app.route('/register/organization',methods=["GET", "POST"])
