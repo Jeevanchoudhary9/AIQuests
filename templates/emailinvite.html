@@ -482,7 +482,9 @@
                     <tr>
                       <td align="left" style="font-family: 'Inter', sans-serif; color: #A1A4A5; font-size: 12px; line-height: 18px;">
                       </td>
-                      <td align="right" style="font-family: 'Inter', sans-serif; color: #A1A4A5; font-size: 12px; line-height: 18px;"><a style="color: #A1A4A5;" href="#" data-link-id="82101136442525288" data-link-type="webview">View in browser</a></td>
+                      {% if browser_url!=None %}
+                      <td align="right" style="font-family: 'Inter', sans-serif; color: #A1A4A5; font-size: 12px; line-height: 18px;"><a style="color: #A1A4A5;" href="{{browser_url}}" data-link-id="82101136442525288" data-link-type="webview">View in browser</a></td>
+                      {% endif %}
                     </tr>
                     <tr>
                       <td colspan="2" height="20"></td>
@@ -618,7 +620,7 @@
                                     <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" width="100%">
                                       <tr>
                                         <td class="bodyTitle" id="bodyText-10" style="font-family: 'Inter', sans-serif; font-size: 16px; line-height: 150%; color: #B8BBBC;">
-                                          <p style="margin-top: 0px; margin-bottom: 10px; line-height: 150%;">Dear {{email}},<br></p>
+                                          <p style="margin-top: 0px; margin-bottom: 10px; line-height: 150%;font-family: 'Inter', sans-serif; font-size: 16px; line-height: 150%; color: #B8BBBC;">Dear {{email}},<br></p>
                                           <p style="margin-top: 0px; margin-bottom: 10px; line-height: 150%;">Discover the power of AIQuest, your new go-to platform for knowledge sharing and collaboration!<br></p>
                                           <p style="margin-top: 0px; margin-bottom: 10px; line-height: 150%;">We streamlines knowledge sharing by combining AI and human expertise into a unified platform!
                                           <p>Join now and experience:</p>

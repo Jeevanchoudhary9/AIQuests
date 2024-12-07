@@ -178,13 +178,15 @@ def inviteUser():
     db.session.commit()
     flash(['Invited successfully','success'])
     register_url=url_for('register', code=code,email=email, _external=True)
+    browser_url = url_for('invitedmail', code=code,email=email,role=role, _external=True)
     print(register_url)
 
     # email sent part 
     email = email
     print(email)
     subject = "You've been invited to join AIQuest"
-    body = render_template('emailinvite.html',email=email,code=code,role=role,register_url=register_url)
+
+    body = render_template('emailinvite.html',email=email,code=code,role=role,register_url=register_url,browser_url=browser_url)
 
     # Start a new thread to send the email
     thread = threading.Thread(target=send_email, args=(email, subject, body))
@@ -194,10 +196,22 @@ def inviteUser():
     return redirect(url_for('userManager'))
 
 @app.route('/inivtedmail')
-def invitedmail():
-    register_url=url_for('register', code="1234 5678 9012 3456",email="jeevanchoudhary2421@gmail.com", _external=True)
-    print(register_url)
-    return render_template('emailinvite.html',email="jeevanchoudhary2421@gmail.com",code="1234 5678 9012 3456",role="admin",register_url=register_url)
+def invitedmail(email=None,code=None,role=None):
+    email = request.args.get('email')
+    code = request.args.get('code')
+    role = request.args.get('role')
+    print(email,code,role)
+    # browser user
+    if not (email is None and code is None and role is None):
+        register_url=url_for('register', code=code,email=email, _external=True)
+        print(register_url)
+        return render_template('emailinvite.html',email=email,code=code,role=role,register_url=register_url,browser_url=None)
+    # email user
+    else:
+        register_url=url_for('register', code="1234 5678 9012 3456",email="demo@gmail.com", _external=True)
+        browser_url = url_for('invitedmail', code="1234 5678 9012 3456",email="demo@gmail.com",role="admin", _external=True)
+        print(register_url)
+        return render_template('emailinvite.html',email="demo@gmail.com",code="1234 5678 9012 3456",role="admin",register_url=register_url,browser_url=browser_url)
 
 
 
