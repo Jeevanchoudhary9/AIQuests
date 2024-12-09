@@ -5,6 +5,12 @@
   .QuestionDetailContainer {
     padding-top: 50px; /* Margin from top */
   }
+
+  .answer-wrap {
+    white-space: pre-wrap;      /* Preserve whitespace but allow wrapping */
+    word-wrap: break-word;      /* Break long words */
+    overflow-wrap: break-word;  /* Break long words */
+}
 </style>
 {% endblock %} {% block content %}
 <div class="bg-gradient-to-b from-blue-50 to-white">
@@ -70,18 +76,16 @@
           </button>
         </div>
 
-        <div class="flex-1">
-          <div class="prose max-w-none">
-            <p>{{answer.answer}}</p>
-          </div>
+        <div class="">
+            <pre class="answer-wrap">{{answer.formatted_answer | safe}}</pre>
 
           <div class="mt-4 flex items-center justify-end text-sm text-gray-500">
-            {% if answer.uname.uname == "AI@aiquest.com" %}
+            {% if answer.username.username == "AI@aiquest.com" %}
             <span>🤖 Answered by AI</span>
             {% else %}
             <span>
               {% if answer.marked_as_official %} ✅ {% endif %} answered
-              {{answer.relative_time}} by {{answer.uname.uname}}
+              {{answer.relative_time}} by {{answer.username}}
             </span>
             {% endif %}
           </div>

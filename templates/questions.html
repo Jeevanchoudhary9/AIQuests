@@ -1,6 +1,18 @@
-{% extends "layout.html" %} {% block title %} All Questions {% endblock %} {%
-block content %}
-<div class="max-w-6xl mx-auto">
+{% extends "layout.html" %} 
+{% block title %} All Questions {% endblock %} 
+
+{% block style %}
+  <style>
+
+    .homecontainer {
+      padding-top: 50px; /* Margin from top */
+    }
+  </style>
+{% endblock %}
+
+{%block content %}
+<div class="bg-gradient-to-b from-blue-50 to-white">
+<div class="homecontainer max-w-6xl mx-auto">
   <div class="flex justify-between items-center mb-8">
     <h1 class="text-3xl font-bold">All Questions</h1>
     <a
@@ -62,5 +74,6 @@ block content %}
     </div>
     {% endfor %}
   </div>
+</div>
 </div>
 {% endblock %}

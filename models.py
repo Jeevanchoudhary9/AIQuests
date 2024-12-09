@@ -4,7 +4,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 import datetime
 import humanize
 import datetime
-
+import re
 
 db=SQLAlchemy(app)
 
@@ -50,7 +50,7 @@ class Questions(db.Model):
     userid = db.Column(db.Integer, db.ForeignKey('user.userid'), nullable=False)
     official_answer = db.Column(db.Integer, db.ForeignKey('answers.answerid'), nullable=False)
     date = db.Column(db.DateTime, nullable=False)
-    orgid = db.Column(db.Integer, db.ForeignKey('Organizations.orgid'), nullable=True)
+    orgid = db.Column(db.Integer, db.ForeignKey('organizations.orgid'), nullable=True)
     ai_answer = db.Column(db.Boolean, nullable=False,default=False)
     tags = db.Column(db.JSON, nullable=False)
     
@@ -85,7 +85,7 @@ class Plus_ones(db.Model):
 class Answers(db.Model):
     __tablename__ = 'answers'
     answerid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
-    answer = db.Column(db.String(200), nullable=False)
+    answer = db.Column(db.String(2000), nullable=False)
     upvotes = db.Column(db.Integer, nullable=False) # Total Number of down votes
     downvotes = db.Column(db.Integer, nullable=False) # Total Number of upvotes
     questionid = db.Column(db.Integer, db.ForeignKey('Questions.questionid'), nullable=False)
@@ -100,6 +100,35 @@ class Answers(db.Model):
         return f'{self.answer}'
     
     def serializer(self):
+        formatted_answer = ''
+        open_code = True 
+        parts = self.answer.split('```')
+        
+        for i, part in enumerate(parts):
+            if i == 0:
+                formatted_answer += part  # Add the first part as it is (before the first code block)
+            else:
+                if open_code:
+                    parts_lines = part.splitlines()
+                    if parts_lines:
+                        class_name = parts_lines[0].split()[0]
+                        part = '\n'.join(['#'+parts_lines[0]+' code is as follows:']+parts_lines[1:])  # Remove the first line of the first part
+                    
+                    # Start a new section for the code block
+                    formatted_answer += f"""
+                    <code class="{class_name}">
+    <div class="bg-gray-50 p-4 dark:bg-gray-800 pt-0">
+                        {part}
+                    """
+                else:
+                    # Close the previous section and append the next part
+                    formatted_answer += f"</div></code>{part}"
+                
+                open_code = not open_code  # Toggle the code block state
+        
+        # Replace bold markdown syntax with HTML <strong> tag
+        formatted_answer = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', formatted_answer)
+
         return {
             'answerid': self.answerid,
             'answer': self.answer,
@@ -110,8 +139,10 @@ class Answers(db.Model):
             'marked_as_official': self.marked_as_official,
             'date': self.date,
             'username': User.query.filter_by(userid=self.userid).first(),
-            'relative_time' : humanize.naturaltime(datetime.datetime.now() - self.date)
+            'relative_time': humanize.naturaltime(datetime.datetime.now() - self.date),
+            'formatted_answer': formatted_answer
         }
+
     
 
 # NOTE: Store upvotes and downvotes for a question
@@ -138,7 +169,28 @@ class Votes(db.Model):
             'answerid': self.answerid,
             'userid': self.userid
         }
+
+
+class Keywords(db.Model):
+    __tablename__ = 'keywords'
+    keywordid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
+    keyword = db.Column(db.String(50), nullable=False)
+    organization = db.Column(db.Integer, db.ForeignKey('organizations.orgid'), nullable=False)
+    count = db.Column(db.Integer, nullable=False, default=0)
+
+    def __repr__(self):
+        return f'<Keyword {self.keywordid}>'
     
+    def __str__(self):
+        return f'{self.keyword}'
+    
+    def serializer(self):
+        return {
+            'keywordid': self.keywordid,
+            'keyword': self.keyword,
+            'organization': self.organization,
+            'count': self.count
+        }
 
 # class OfficialAnswer(db.Model):
 #     __tablename__ = 'officialanswer'
@@ -251,6 +303,7 @@ class Labels(db.Model):
             'orgid': self.orgid,
             'date': self.date
         }
+
     
 class ModeratorLabel(db.Model):
     __tablename__ ='moderatorlabel'

@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from sqlalchemy import distinct
 from app import app
 from functools import wraps
-from models import db, User, Questions, Plus_ones, Answers,Votes,Organizations,Moderators,Labels,Invites
+from models import db, User, Questions, Plus_ones, Answers,Votes,Organizations,Moderators,Labels,Invites,Keywords
 import random
 import ollama
 import re
@@ -23,6 +23,9 @@ from email.mime.text import MIMEText
 import smtplib
 import threading
 from flask import jsonify
+from keybert import KeyBERT
+
+model = KeyBERT('distilbert-base-nli-mean-tokens')
 
 # tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 # model = BertModel.from_pretrained('bert-base-uncased')
@@ -496,149 +499,175 @@ def get_image(id):
 # def ques():
 #     return render_template('QuestionDetails.html') 
 
-# @app.route('/questions', methods=['GET', 'POST', 'DELETE', 'PUT'])
-# def questions():
+@app.route('/questions', methods=['GET', 'POST', 'DELETE', 'PUT'])
+def questions():
 
-#     if request.method=='POST': # Add the question
-#         question=request.form.get('question')
-#         question=questions(question=question,userid=session['user_id'].first(), plus_one=0, official_answer="")
-#         db.session.add(question)
-#         db.session.commit()
-#         flash(['Question added successfully','success'])
-#         return redirect(url_for('questions'))
+    if request.method=='POST': # Add the question
+        question=request.form.get('question')
+        print("hwlloe question is working")
+        question=questions(question=question,userid=session['user_id'].first(), plus_one=0, official_answer="")
+        db.session.add(question)
+        db.session.commit()
+        flash(['Question added successfully','success'])
+        return redirect(url_for('questions'))
     
 
-#     elif request.method=='DELETE': # Delete the question
-#         question_id=request.form.get('question_id')
-#         if question_id is None:
-#             flash('Please fill the required fields')
-#             return redirect(url_for('questions'))
-#         question=questions.query.filter_by(questionid=question_id).first()
-#         db.session.delete(question)
-#         db.session.commit()
-#         flash(['Question deleted successfully','success'])
-#         return redirect(url_for('questions'))
+    elif request.method=='DELETE': # Delete the question
+        question_id=request.form.get('question_id')
+        if question_id is None:
+            flash('Please fill the required fields')
+            return redirect(url_for('questions'))
+        question=questions.query.filter_by(questionid=question_id).first()
+        db.session.delete(question)
+        db.session.commit()
+        flash(['Question deleted successfully','success'])
+        return redirect(url_for('questions'))
     
 
-#     elif request.method=='PUT': # Plus one the question
-#         # Plus one
-#         question_id=request.form.get('question_id')
-#         # If already plus one remove plus one
-#         if plus_ones.query.get(question_id = int(question_id), userid = int(session['user_id'])):
-#             plus_ones.query.filter_by(question_id = int(question_id), userid = int(session['user_id'])).delete()
-#             questions.query.filter_by(questionid=question_id).first().plus_one-=1
-#             db.session.commit()
+    # elif request.method=='PUT': # Plus one the question
+    #     # Plus one
+    #     question_id=request.form.get('question_id')
+    #     # If already plus one remove plus one
+    #     if plus_ones.query.get(question_id = int(question_id), userid = int(session['user_id'])):
+    #         plus_ones.query.filter_by(question_id = int(question_id), userid = int(session['user_id'])).delete()
+    #         questions.query.filter_by(questionid=question_id).first().plus_one-=1
+    #         db.session.commit()
             
     
 
-#     else: # Get all questions
-#         question_whole=[]
-#         questions = Questions.query.all()
-#         for question in questions:
-#             question_whole.append(question.serializer())
-#         print(question_whole)
-#         return render_template('questions.html',questions=question_whole)
+    else: # Get all questions
+        question_whole=[]
+        questions = Questions.query.all()
+        for question in questions:
+            question_whole.append(question.serializer())
+        print(question_whole)
+        return render_template('questions.html',questions=question_whole)
     
-# @app.route('/questions_details/<int:question_id>', methods=['GET', 'POST'])
-# def questions_details(question_id):
+@app.route('/questions_details/<int:question_id>', methods=['GET', 'POST'])
+def questions_details(question_id):
 
-#     if request.method=='POST':
-#         answer=request.form.get('answer_body')
-#         isAnsOfficial = True if request.form.get('official_status') == "yes" else False
+    if request.method=='POST':
+        answer=request.form.get('answer_body')
+        isAnsOfficial = True if request.form.get('official_status') == "yes" else False
         
-#         if answer is None:
-#             flash('Please fill the required fields')
-#             return redirect(url_for('questions'))
+        if answer is None:
+            flash('Please fill the required fields')
+            return redirect(url_for('questions'))
         
-#         newAnswer=answers(answer=answer, questionid=question_id, userid=session['user_id'],
-#                        upvotes=0, downvotes=0, marked_as_official=isAnsOfficial, date=datetime.datetime.now())
-#         db.session.add(newAnswer)
-#         db.session.commit()
+        newAnswer=Answers(answer=answer, questionid=question_id, userid=session['user_id'],
+                       upvotes=0, downvotes=0, marked_as_official=isAnsOfficial, date=datetime.datetime.now())
+        db.session.add(newAnswer)
+        db.session.commit()
 
-#         if isAnsOfficial:
-#             question = Questions.query.filter_by(questionid=question_id).first()
-#             question_text = question.question_title + ' ' + question.question_detail
-#             question.official_answer = answers.query.filter_by(questionid=question_id, marked_as_official=True).first().answerid
+        if isAnsOfficial:
+            question = Questions.query.filter_by(questionid=question_id).first()
+            question_text = question.question_title + ' ' + question.question_detail
+            question.official_answer = Answers.query.filter_by(questionid=question_id, marked_as_official=True).first().answerid
 
-#             # Generate BERT embedding for the question text
-#             inputs = tokenizer(question_text, return_tensors='pt', truncation=True, padding=True)
-#             with torch.no_grad():
-#                 outputs = model(**inputs)
-#                 embedding = outputs.last_hidden_state.mean(dim=1).squeeze().tolist()
+            # Generate BERT embedding for the question text
+            inputs = tokenizer(question_text, return_tensors='pt', truncation=True, padding=True)
+            with torch.no_grad():
+                outputs = model(**inputs)
+                embedding = outputs.last_hidden_state.mean(dim=1).squeeze().tolist()
 
-#             # Create the official answer entry
-#             official_entry = OfficialAnswer(
-#                 questionid=question_id,
-#                 embedding=str(embedding),
-#                 question_text=question_text,
-#                 answer_text=answer
-#             )
-#             db.session.add(official_entry)
-#             db.session.commit()
+            # Create the official answer entry
+            official_entry = OfficialAnswer(
+                questionid=question_id,
+                embedding=str(embedding),
+                question_text=question_text,
+                answer_text=answer
+            )
+            db.session.add(official_entry)
+            db.session.commit()
 
 
-#         flash(['Answer added successfully','success'])
-#         return redirect(url_for('questions'))
+        flash(['Answer added successfully','success'])
+        return redirect(url_for('questions'))
             
 
-#     else: # Get all questions
-#         questions=Questions.query.filter_by(questionid=question_id).first()
-#         print(questions.serializer())
+    else: # Get all questions
+        questions=Questions.query.filter_by(questionid=question_id).first()
+        print(questions.serializer())
         
-#         timestamp = questions.date
+        timestamp = questions.date
 
-#         # Get the current time
-#         now = datetime.datetime.now()
+        # Get the current time
+        now = datetime.datetime.now()
 
-#         # Calculate the relative time
-#         relative_time = humanize.naturaltime(now - timestamp)
-#         user_question=User.query.filter_by(userid=questions.userid).first()
+        # Calculate the relative time
+        relative_time = humanize.naturaltime(now - timestamp)
+        user_question=User.query.filter_by(userid=questions.userid).first()
 
-#         answer_all=answers.query.filter_by(questionid=question_id).all()
-#         answers_list=[]
-#         for answer in answer_all:
-#             answers_list.append(answer.serializer())
-#         print(answers_list)
+        answer_all=Answers.query.filter_by(questionid=question_id).all()
+        answers_list=[]
+        for answer in answer_all:
+            answers_list.append(answer.serializer())
+        print(answers_list)
 
-#         return render_template('QuestionDetails.html',question=questions.serializer(),relative_time=relative_time,user_question=user_question,answers=answers_list)
+        return render_template('QuestionDetails.html',question=questions.serializer(),relative_time=relative_time,user_question=user_question,answers=answers_list)
 
 
-# @auth_required
+def ask_question_function(question_id, org_id, title, body, tags):
+    print("thread running")
+
+    prompt = "Answer the given question: " + title + body + "from tag" + tags
+    response = ollama.generate(model='llama3.2', prompt=prompt)
+    print(response["response"])
+
+    answer = response["response"]
+
+    extracted_keywords = model.extract_keywords(title + " " + body + " " + tags + answer)
+
+    new_answer = Answers(
+        answer=answer,
+        questionid = question_id,
+        userid=2,
+        upvotes=0,
+        downvotes=0,
+        marked_as_official=False,
+        date=datetime.datetime.now()
+    )
+
+    # for key in extracted_keywords:
+    #     if_keyword_exist = Keywords.query.filter_by(keyword=key.lower()).first()
+    #     if if_keyword_exist:
+    #         if_keyword_exist.count += 1
+    #     else:
+    #         new_keyword = Keywords(
+    #             keyword=key.lower(),
+    #             organization=org_id,
+    #             count=1,
+    #         )
+    #         db.session.add(new_keyword)
+    db.session.add(new_answer)
+    db.session.commit()
+    print("thread ending")
+
+
 @app.route('/ask_question', methods=["GET", "POST"])
 @role_required('user')
 def ask_question():
 
     if request.method == "POST":
-        # Get form data
         title = request.form.get('title')
         body = request.form.get('body')
         tags = request.form.get('tags')
+        random_id = random.randint(1000, 9999)
 
         question=request.form.get('question')
-        prompt = "Answer the given question: " + title + body + "from" + tags + ' in format {"question": "The same question", "answer": "Your answer"} the answer should be in the format {"question": "The same question", "answer": "Your answer"}'
-        response = ollama.generate(model='llama3.2', prompt=prompt)
-        print(response["response"])
-        
-        # Parse json
-        regex = r'{"question": "(.*?)", "answer": "(.*?)"}'
-        matches = re.findall(regex, response["response"])
-        print(matches)
-        answer = matches[0]
-
-        # Basic validation to check if all fields are filled
+         # Basic validation to check if all fields are filled
         if not title or not body or not tags:
             flash('Please fill in all fields.', 'error')
             return redirect(url_for('ask_question'))
         
+        org_id = User.query.filter_by(userid=session.get('user_id')).first().organization
+
         # Optional: Process and store tags (you may choose to split them by commas or space)
         tag_list = tags.split()
         tag_objects = []
         for tag in tag_list:
             tag_objects.append(tag)
-        
-        random_id = random.randint(1000, 9999)
-
-        # Create and save the question
+            # Create and save the question
         new_question = Questions(
             questionid = random_id,
             question_title=title,
@@ -646,26 +675,22 @@ def ask_question():
             date=datetime.datetime.now(),
             official_answer="",
             userid=session.get('user_id'),
-            tags =tag_objects
-        )
-
-        new_answer = Answers(
-            answer=answer[1],
-            questionid = random_id,
-            userid=2,
-            upvotes=0,
-            downvotes=0,
-            marked_as_official=False,
-            date=datetime.datetime.now()
+            tags =tag_objects,
+            orgid=org_id
         )
 
         db.session.add(new_question)
-        db.session.add(new_answer)
         db.session.commit()
+        # Create a new thread to run ask_question_function asynchronously
+        thread = threading.Thread(target=ask_question_function, args=(random_id, org_id, title, body, tags))
+        print('thread startng')
+        thread.start()
 
-        flash(['Your question has been posted successfully!', 'success'])
+        flash(['Your question is being posted in the background!', 'success'])
         return redirect(url_for('ask_question'))  # Redirect to the same page or another page
+    
     return render_template('AskQuestion.html')
+
 
 @app.route('/<int:answer_id>/vote', methods=["POST"])
 @role_required('user')
