@@ -125,7 +125,12 @@ def organization_dashboard():
         {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
     ]
 
-    return render_template('OrganizationDashboard.html', questions=questions)
+    invites = Invites.query.all()
+    all_invites = []
+    for invite in invites:
+        all_invites.append(invite.serializer())
+
+    return render_template('OrganizationDashboard.html', questions=questions,invites=all_invites)
 
 
 # NOTE: 
