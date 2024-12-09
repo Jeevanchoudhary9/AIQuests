@@ -67,7 +67,8 @@ class Questions(db.Model):
             'ai_answer': self.ai_answer,
             'tags': self.tags,
             'no_of_ans': Answers.query.filter_by(questionid=self.questionid).count(),
-            'relative_time' : humanize.naturaltime(datetime.datetime.now() - self.date)
+            'relative_time' : humanize.naturaltime(datetime.datetime.now() - self.date),
+            'orgid': self.orgid
         }
 
 
