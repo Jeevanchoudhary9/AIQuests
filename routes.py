@@ -142,7 +142,7 @@ def moderator_dashboard():
 
 
 @app.route('/dashboard/user')
-@role_required(role="user")
+@role_required("user")
 def user_dashboard():
     questions = [
         {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
@@ -154,6 +154,7 @@ def user_dashboard():
 
 
 @app.route('/invite_user',methods=["POST"])
+@role_required('organization')
 def inviteUser():
     email = request.form.get('email')
     role = request.form.get('role')
@@ -218,6 +219,7 @@ def invitedmail(email=None,code=None,role=None):
 
 
 @app.route('/UserManager')
+@role_required('organization')
 def userManager():
     invites = Invites.query.all()
     print(datetime.datetime.now())
@@ -231,11 +233,13 @@ def userManager():
 
 
 @app.route('/UserManager', methods=['POST'])
+@role_required('organization')
 def UserManager():
     try:
         # Get JSON data
         data = request.get_json()
         print(data)
+        print(type(data.get('registered')))
         if not data:
             return jsonify({'success': False, 'message': 'No data provided'}), 400
         if not data.get('email'):
@@ -260,6 +264,7 @@ def UserManager():
             return jsonify({'success': False, 'message': 'ID is required'}), 400
         
         if data.get('registered') == 'True':
+            print('True')
             user = User.query.filter_by(userid=data['id']).first()
             user.email = data.get('email')
             user.orgid = data.get('orgid')
@@ -272,6 +277,7 @@ def UserManager():
                 user.password = generate_password_hash(data.get('new_password'))
 
         elif data.get('registered') == 'False':
+            print('False')
             invite = Invites.query.filter_by(inviteid=data['id']).first()
             invite.email = data.get('email')
             invite.role = data.get('role')
@@ -287,6 +293,7 @@ def UserManager():
 
 
 @app.route('/UserManager', methods=['DELETE'])
+@role_required('organization')
 def UserManager_delete():
     print(request.get_json())
     data = request.get_json()
@@ -377,8 +384,8 @@ def login():
             organization = Organizations.query.filter_by(orgemail=email).first()
             if organization and check_password_hash(organization.orgpassword, password):
                 session['org_id'] = organization.orgid
-                flash('Organization login successful!')
-                return redirect(url_for('dashboard'))
+                flash(['Organization login successful!','success'])
+                return redirect(url_for('organization_dashboard'))
             flash('Invalid organization credentials. Please try again.')
 
     return render_template('login.html')
@@ -593,6 +600,7 @@ def get_image(id):
 
 # @auth_required
 @app.route('/ask_question', methods=["GET", "POST"])
+@role_required('user')
 def ask_question():
 
     if request.method == "POST":
@@ -655,6 +663,7 @@ def ask_question():
     return render_template('AskQuestion.html')
 
 @app.route('/<int:answer_id>/vote', methods=["POST"])
+@role_required('user')
 def vote(answer_id):
     if request.method != "POST":
         return jsonify({"error": "Invalid request"}), 400
@@ -700,6 +709,7 @@ def vote(answer_id):
 
 
 @app.route('/<int:question_id>/plusone', methods=["POST"])
+@role_required('user')
 def plus_one(question_id):
     if request.method == "POST":
         user_id = int(request.form.get("user_id")) # TODO: Get it from Session ID

@@ -259,6 +259,9 @@
                         orgidInput.value = this.getAttribute('data-orgid') || '';
                         roleInput.value = this.getAttribute('data-role') || '';
                         codeInput.value = this.getAttribute('data-code') || '';
+            
+                        // Set a custom attribute to store the original email
+                        emailInput.setAttribute('data-original-email', this.getAttribute('data-email') || '');
                     }
                 });
             });
@@ -280,103 +283,106 @@
         setupModal('[data-modal-target="inviteUserModal"]', 'inviteUserModal', '[data-modal-hide="inviteUserModal"]');
         
         // Edit form submission
-        const editModal = document.getElementById('editUserModal');
-        const editForm = editModal.querySelector('form');
-        const newPasswordInput = document.getElementById('editnew-password');
-        const confirmPasswordInput = document.getElementById('editconfirm-password');
+    const editModal = document.getElementById('editUserModal');
+    const editForm = editModal.querySelector('form');
+    const newPasswordInput = document.getElementById('editnew-password');
+    const confirmPasswordInput = document.getElementById('editconfirm-password');
+    
+    editForm.addEventListener('submit', function(e) {
+        e.preventDefault();
         
-        editForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Basic password validation
-            if (newPasswordInput.value && newPasswordInput.value !== confirmPasswordInput.value) {
-                alert('Passwords do not match');
-                return;
+        // Basic password validation
+        if (newPasswordInput.value && newPasswordInput.value !== confirmPasswordInput.value) {
+            alert('Passwords do not match');
+            return;
+        }
+        
+        // Get the original email from the input's data attribute
+        const oldEmail = document.getElementById('editemail').getAttribute('data-original-email');
+        const newEmail = document.getElementById('editemail').value;
+        
+        // Find the edit button using the original email
+        const activeEditButton = document.querySelector('[data-modal-show="editUserModal"][data-email="' + oldEmail + '"]');
+        
+        // Prepare form data
+        const formData = {
+            email: newEmail,
+            orgid: document.getElementById('editorgid').value,
+            role: document.getElementById('editrole').value,
+            code: document.getElementById('editcode').value,
+            new_password: newPasswordInput.value || null,
+            confirm_password: confirmPasswordInput.value || null,
+            registered: activeEditButton ? activeEditButton.getAttribute('data-registered') : null,
+            old_email: oldEmail,
+            id: activeEditButton ? activeEditButton.getAttribute('data-id') : null
+        };
+        
+        // Send data via fetch
+        fetch('/UserManager', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('User updated successfully');
+                editModal.classList.add('hidden');
+                editModal.classList.remove('modal-center');
+                editModal.setAttribute('aria-hidden', 'true');
+                location.reload();
+            } else {
+                alert('Error updating user: ' + data.message);
             }
-            
-            // Find the edit button to get the data-registered attribute
-            const editButton = document.querySelector('[data-modal-show="editUserModal"]');
-            
-            // Prepare form data
-            const formData = {
-                email: document.getElementById('editemail').value,
-                orgid: document.getElementById('editorgid').value,
-                role: document.getElementById('editrole').value,
-                code: document.getElementById('editcode').value,
-                new_password: newPasswordInput.value || null,
-                confirm_password: confirmPasswordInput.value || null,
-                registered: editButton.getAttribute('data-registered'),
-                id: editButton.getAttribute('data-id')
-            };
-            console.log(formData);
-            
-            // Send data via fetch
-            fetch('/UserManager', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('User updated successfully');
-                    editModal.classList.add('hidden');
-                    editModal.classList.remove('modal-center');
-                    editModal.setAttribute('aria-hidden', 'true');
-                    location.reload();
-                } else {
-                    alert('Error updating user: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while updating the user');
-            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the user');
         });
+    });
 
         const deleteButtons = document.querySelectorAll('a.delete-user');
-    deleteButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
 
-            // Get user details from data attributes
-            const inviteid = this.getAttribute('data-inviteid');
-            const userEmail = this.getAttribute('data-email');
-            const registered = this.getAttribute('data-registered');
+                // Get user details from data attributes
+                const inviteid = this.getAttribute('data-inviteid');
+                const userEmail = this.getAttribute('data-email');
+                const registered = this.getAttribute('data-registered')
 
-            // Confirm deletion
-            if (confirm(`Are you sure you want to delete the user with email ${userEmail}?`)) {
-                // Send delete request
-                fetch('/UserManager', {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        inviteid: inviteid,
-                        email: userEmail,
-                        registered: registered,
-
+                // Confirm deletion
+                if (confirm(`Are you sure you want to delete the user with email ${userEmail}?`)) {
+                    // Send delete request
+                    fetch('/UserManager', {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            inviteid: inviteid,
+                            email: userEmail,
+                            registered: registered
+                        })
                     })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('User deleted successfully');
-                        location.reload(); // Refresh the page
-                    } else {
-                        alert('Error deleting user: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while deleting the user');
-                });
-            }
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('User deleted successfully');
+                            location.reload(); // Refresh the page
+                        } else {
+                            alert('Error deleting user: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while deleting the user');
+                    });
+                }
+            });
         });
-    });
-    });
+    }); 
 </script>
 {% endblock %}
