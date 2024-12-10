@@ -42,6 +42,7 @@ model = KeyBERT('distilbert-base-nli-mean-tokens')
 
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
+from transformers import pipeline
 
 # Initialize lemmatizer
 lemmatizer = WordNetLemmatizer()
@@ -51,6 +52,22 @@ def lemmatize_text(text):
     lemmatized_words = [lemmatizer.lemmatize(word) for word in words]
     return " ".join(lemmatized_words)
 
+# Load a pre-trained text classification pipeline for toxicity detection
+def load_toxicity_model():
+    return pipeline("text-classification", model="unitary/toxic-bert", tokenizer="unitary/toxic-bert")
+
+def is_abusive(content, threshold=0.5):
+    # Load the toxicity detection model
+    toxicity_detector = load_toxicity_model()
+    
+    # Get the prediction from the model
+    predictions = toxicity_detector(content)
+    
+    # Check for "toxic" or similar labels
+    abusive = any(pred["label"].lower() == "toxic" and pred["score"] >= threshold for pred in predictions)
+    
+    # Return the result and prediction details
+    return abusive, predictions
 
 def role_required(role=None):
     def decorator(func):
@@ -625,33 +642,35 @@ def ask_question_function(question_id, org_id, title, body, tags):
         response = ollama.generate(model='llama3.2', prompt=prompt)
         print(response["response"])
 
-        answer = response["response"]
+        is_toxic, details = is_abusive(response["response"])
+        if not is_toxic:
+            answer = response["response"]
 
-        extracted_keywords = [keyword[0] for keyword in model.extract_keywords(answer)] + tags
+            extracted_keywords = [keyword[0] for keyword in model.extract_keywords(answer)] + tags
 
-        new_answer = Answers(
-            answer=answer,
-            questionid = question_id,
-            userid=2,
-            upvotes=0,
-            downvotes=0,
-            marked_as_official=False,
-            date=datetime.datetime.now()
-        )
+            new_answer = Answers(
+                answer=answer,
+                questionid = question_id,
+                userid=2,
+                upvotes=0,
+                downvotes=0,
+                marked_as_official=False,
+                date=datetime.datetime.now()
+            )
 
-        for key in extracted_keywords:
-            if_keyword_exist = Keywords.query.filter_by(keyword=key.lower()).first()
-            if if_keyword_exist:
-                if_keyword_exist.count += 1
-            else:
-                new_keyword = Keywords(
-                    keyword=lemmatize_text(key.lower()),
-                    organization=org_id,
-                    count=1,
-                )
-                db.session.add(new_keyword)
-        db.session.add(new_answer)
-        db.session.commit()
+            for key in extracted_keywords:
+                if_keyword_exist = Keywords.query.filter_by(keyword=key.lower()).first()
+                if if_keyword_exist:
+                    if_keyword_exist.count += 1
+                else:
+                    new_keyword = Keywords(
+                        keyword=lemmatize_text(key.lower()),
+                        organization=org_id,
+                        count=1,
+                    )
+                    db.session.add(new_keyword)
+            db.session.add(new_answer)
+            db.session.commit()
         print("thread ending")
 
 
@@ -664,6 +683,12 @@ def ask_question():
         body = request.form.get('body')
         tags = request.form.get('tags')
         random_id = random.randint(1000, 9999)
+
+        is_toxic, details = is_abusive(title + ' ' + body + ' ' + tags)
+
+        if is_toxic:
+            flash('The question content is toxic cannot be posted. We apologize for the inconvenience.', 'error')
+            return redirect(url_for('ask_question'))
 
          # Basic validation to check if all fields are filled
         if not title or not body or not tags:

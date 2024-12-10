@@ -1,18 +1,23 @@
-{% extends "layout.html" %} {% block title %} Question Detail - question.title
-{% endblock %} {% block style %}
-<style>
-  /* Custom styles for the question detail page */
-  .QuestionDetailContainer {
-    padding-top: 50px; /* Margin from top */
-  }
+{% extends "layout.html" %}
 
-  .answer-wrap {
-    white-space: pre-wrap;      /* Preserve whitespace but allow wrapping */
-    word-wrap: break-word;      /* Break long words */
-    overflow-wrap: break-word;  /* Break long words */
-}
-</style>
-{% endblock %} {% block content %}
+{% block title %}
+  Home - Your Gateway to Programming Knowledge
+{% endblock %}
+
+{% block navbar %}
+  {% include "UserNavbar.html" %}
+{% endblock %}
+
+
+{% block style %}
+  <style>
+
+    .homecontainer {
+      padding-top: 50px; /* Margin from top */
+    }
+  </style>
+{% endblock %}
+{% block content %}
 <div class="bg-gradient-to-b from-blue-50 to-white">
 <div class="QuestionDetailContainer max-w-6xl mx-auto">
   <div class="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -60,16 +65,21 @@
       <div class="flex gap-6">
         <div style="text-align: center">
           <button
-            onclick="upvote()"
+            class="upvote-button"
+            data-answer-id="{{ answer.answerid }}"
             style="background: none; border: none; cursor: pointer"
           >
             <span>⬆️</span>
           </button>
-          <span id="voteCount" style="font-size: 1.2em; font-weight: bold"
-            >0</span
+          <span
+            id="voteCount-{{ answer.answerid }}"
+            style="font-size: 1.2em; font-weight: bold"
           >
+            {{ answer.vote_count }} 0
+          </span>
           <button
-            onclick="downvote()"
+            class="downvote-button"
+            data-answer-id="{{ answer.answerid }}"
             style="background: none; border: none; cursor: pointer"
           >
             <span>⬇️</span>
