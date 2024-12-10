@@ -40,6 +40,17 @@ model = KeyBERT('distilbert-base-nli-mean-tokens')
 #     embedding = outputs.last_hidden_state.mean(dim=1).detach().numpy()
 #     return embedding
 
+from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
+
+# Initialize lemmatizer
+lemmatizer = WordNetLemmatizer()
+
+def lemmatize_text(text):
+    words = word_tokenize(text)
+    lemmatized_words = [lemmatizer.lemmatize(word) for word in words]
+    return " ".join(lemmatized_words)
+
 
 def role_required(role=None):
     def decorator(func):
@@ -67,6 +78,7 @@ def role_required(role=None):
             return redirect(url_for('login'))
         return inner
     return decorator
+
 
 def send_email(to_email, subject, html_content,attachment=None):
     # Gmail SMTP server details
@@ -215,15 +227,12 @@ def invitedmail(email=None,code=None,role=None):
     # browser user
     if not (email is None and code is None and role is None):
         register_url=url_for('register', code=code,email=email, _external=True)
-        print(register_url)
         return render_template('emailinvite.html',email=email,code=code,role=role,register_url=register_url,browser_url=None)
     # email user
     else:
         register_url=url_for('register', code="1234 5678 9012 3456",email="demo@gmail.com", _external=True)
         browser_url = url_for('invitedmail', code="1234 5678 9012 3456",email="demo@gmail.com",role="admin", _external=True)
-        print(register_url)
         return render_template('emailinvite.html',email="demo@gmail.com",code="1234 5678 9012 3456",role="admin",register_url=register_url,browser_url=browser_url)
-
 
 
 @app.route('/UserManager')
@@ -398,6 +407,7 @@ def login():
 
     return render_template('login.html')
 
+
 @app.route('/register',methods=["GET", "POST"])
 def register(code=None, email=None):
 
@@ -542,7 +552,8 @@ def questions():
             question_whole.append(question.serializer())
         print(question_whole)
         return render_template('questions.html',questions=question_whole)
-    
+
+
 @app.route('/questions_details/<int:question_id>', methods=['GET', 'POST'])
 def questions_details(question_id):
 
@@ -609,39 +620,39 @@ def questions_details(question_id):
 
 def ask_question_function(question_id, org_id, title, body, tags):
     print("thread running")
+    with app.app_context():
+        prompt = "Answer the given question: " + title + body + "from tag" + " ".join(tags)
+        response = ollama.generate(model='llama3.2', prompt=prompt)
+        print(response["response"])
 
-    prompt = "Answer the given question: " + title + body + "from tag" + tags
-    response = ollama.generate(model='llama3.2', prompt=prompt)
-    print(response["response"])
+        answer = response["response"]
 
-    answer = response["response"]
+        extracted_keywords = [keyword[0] for keyword in model.extract_keywords(answer)] + tags
 
-    extracted_keywords = model.extract_keywords(title + " " + body + " " + tags + answer)
+        new_answer = Answers(
+            answer=answer,
+            questionid = question_id,
+            userid=2,
+            upvotes=0,
+            downvotes=0,
+            marked_as_official=False,
+            date=datetime.datetime.now()
+        )
 
-    new_answer = Answers(
-        answer=answer,
-        questionid = question_id,
-        userid=2,
-        upvotes=0,
-        downvotes=0,
-        marked_as_official=False,
-        date=datetime.datetime.now()
-    )
-
-    # for key in extracted_keywords:
-    #     if_keyword_exist = Keywords.query.filter_by(keyword=key.lower()).first()
-    #     if if_keyword_exist:
-    #         if_keyword_exist.count += 1
-    #     else:
-    #         new_keyword = Keywords(
-    #             keyword=key.lower(),
-    #             organization=org_id,
-    #             count=1,
-    #         )
-    #         db.session.add(new_keyword)
-    db.session.add(new_answer)
-    db.session.commit()
-    print("thread ending")
+        for key in extracted_keywords:
+            if_keyword_exist = Keywords.query.filter_by(keyword=key.lower()).first()
+            if if_keyword_exist:
+                if_keyword_exist.count += 1
+            else:
+                new_keyword = Keywords(
+                    keyword=lemmatize_text(key.lower()),
+                    organization=org_id,
+                    count=1,
+                )
+                db.session.add(new_keyword)
+        db.session.add(new_answer)
+        db.session.commit()
+        print("thread ending")
 
 
 @app.route('/ask_question', methods=["GET", "POST"])
@@ -654,7 +665,6 @@ def ask_question():
         tags = request.form.get('tags')
         random_id = random.randint(1000, 9999)
 
-        question=request.form.get('question')
          # Basic validation to check if all fields are filled
         if not title or not body or not tags:
             flash('Please fill in all fields.', 'error')
@@ -663,11 +673,8 @@ def ask_question():
         org_id = User.query.filter_by(userid=session.get('user_id')).first().organization
 
         # Optional: Process and store tags (you may choose to split them by commas or space)
-        tag_list = tags.split()
-        tag_objects = []
-        for tag in tag_list:
-            tag_objects.append(tag)
-            # Create and save the question
+        tag_objects = [tag.strip() for tag in tags.split(',')]
+
         new_question = Questions(
             questionid = random_id,
             question_title=title,
@@ -681,8 +688,9 @@ def ask_question():
 
         db.session.add(new_question)
         db.session.commit()
+
         # Create a new thread to run ask_question_function asynchronously
-        thread = threading.Thread(target=ask_question_function, args=(random_id, org_id, title, body, tags))
+        thread = threading.Thread(target=ask_question_function, args=(random_id, org_id, title, body, tag_objects))
         print('thread startng')
         thread.start()
 
