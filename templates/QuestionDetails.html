@@ -1,4 +1,11 @@
-{% extends "layout.html" %} {% block title %} Question Detail - question.title
+{% extends "layout.html" %}
+
+{% block title %}
+  Home - Your Gateway to Programming Knowledge
+{% endblock %}
+
+{% block navbar %}
+  {% include "UserNavbar.html" %}
 {% endblock %} {% block style %}
 <style>
   /* Custom styles for the question detail page */
@@ -60,6 +67,41 @@
   <div class="mb-8">
     <h2 class="text-xl font-bold mb-4">{{ question.answer_count }} Answers</h2>
 
+    {% if question.official_answer != "" %}
+    <div class="bg-white rounded-lg shadow-md p-6 mb-4">
+      <div class="flex gap-6">
+        <div style="text-align: center">
+          <button
+            class="upvote-button"
+            style="background: none; border: none; cursor: pointer"
+          >
+            <span>⬆️</span>
+          </button>
+          <span
+            id="voteCount"
+            style="font-size: 1.2em; font-weight: bold"
+          >
+            0
+          </span>
+          <button
+            class="downvote-button"
+            style="background: none; border: none; cursor: pointer"
+          >
+            <span>⬇️</span>
+          </button>
+        </div>
+
+        <div class="">
+            <pre class="answer-wrap">{{question.official_answer | safe}}</pre>
+
+          <div class="mt-4 flex items-center justify-end text-sm text-gray-500">
+            <span>🤖 Answered by AI</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
     {% for answer in answers %}
     <div class="bg-white rounded-lg shadow-md p-6 mb-4">
       <div class="flex gap-6">
@@ -107,9 +149,9 @@
 
   <div class="bg-white rounded-lg shadow-md p-6">
     <h3 class="text-xl font-bold mb-4">Your Answer</h3>
-    <form action="/questions_details/{{ question.questionid }}" method="POST">
+    <form action="/answers/{{ question.questionid }}" method="POST">
       <textarea
-        name="answer_body"
+        name="answer"
         class="w-full h-48 p-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 answer"
         name="answer"
         id="answer"
