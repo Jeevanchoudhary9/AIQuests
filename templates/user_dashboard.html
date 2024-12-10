@@ -4,6 +4,10 @@
   Home - Your Gateway to Programming Knowledge
 {% endblock %}
 
+{% block navbar %}
+  {% include "UserNavbar.html" %}
+{% endblock %}
+
 
 {% block style %}
   <style>
@@ -25,7 +29,7 @@
         Get answers from developers and AI, all in one place
       </p>
       <a
-        href="{{url_for('ask_question')}}"
+        href="{{url_for('questions')}}"
         class="bg-orange-500 text-white px-8 py-3 rounded-md text-lg font-semibold hover:bg-orange-600"
       >
         View All Questions

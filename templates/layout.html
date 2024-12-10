@@ -21,7 +21,8 @@
   </head>
   <body>
     <!-- Include Navbar -->
-    {% include 'navbar.html' %}
+    {% block navbar %}{% endblock %}
+
 
     <!-- Flash Message Handling -->
     {% with messages = get_flashed_messages() %} {% if messages %} {% for
