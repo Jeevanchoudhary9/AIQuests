@@ -1,23 +1,23 @@
-{% extends "layout.html" %}
+{% extends "layout.html" %} {% block title %} Question Detail - question.title
+{% endblock %} {% block style %}
+<style>
+  /* Custom styles for the question detail page */
+  .QuestionDetailContainer {
+    padding-top: 50px; /* Margin from top */
+  }
 
-{% block title %}
-  Home - Your Gateway to Programming Knowledge
+  .answer-wrap {
+    white-space: pre-wrap;      /* Preserve whitespace but allow wrapping */
+    word-wrap: break-word;      /* Break long words */
+    overflow-wrap: break-word;  /* Break long words */
+}
+</style>
 {% endblock %}
 
-{% block navbar %}
-  {% include "UserNavbar.html" %}
-{% endblock %}
 
 
-{% block style %}
-  <style>
-
-    .homecontainer {
-      padding-top: 50px; /* Margin from top */
-    }
-  </style>
-{% endblock %}
 {% block content %}
+
 <div class="bg-gradient-to-b from-blue-50 to-white">
 <div class="QuestionDetailContainer max-w-6xl mx-auto">
   <div class="bg-white rounded-lg shadow-md p-6 mb-6">

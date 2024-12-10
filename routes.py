@@ -54,20 +54,37 @@ def lemmatize_text(text):
 
 # Load a pre-trained text classification pipeline for toxicity detection
 def load_toxicity_model():
-    return pipeline("text-classification", model="unitary/toxic-bert", tokenizer="unitary/toxic-bert")
+    """
+    Initializes and returns a pre-trained NLP pipeline for toxicity detection
+    with hardware acceleration.
+    """
+    # Detect device (mps for Apple Silicon, cuda for NVIDIA, cpu fallback)
+    device = 0 if torch.cuda.is_available() else -1  # cuda if available
+    if not torch.cuda.is_available() and hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        device = "mps"  # Use MPS if available
 
-def is_abusive(content, threshold=0.5):
+    return pipeline("text-classification", model="unitary/toxic-bert", tokenizer="unitary/toxic-bert", device=device)
+
+def is_abusive(content, threshold=0.5, max_token_length=512):
     # Load the toxicity detection model
     toxicity_detector = load_toxicity_model()
-    
-    # Get the prediction from the model
-    predictions = toxicity_detector(content)
-    
-    # Check for "toxic" or similar labels
-    abusive = any(pred["label"].lower() == "toxic" and pred["score"] >= threshold for pred in predictions)
-    
-    # Return the result and prediction details
-    return abusive, predictions
+
+    # Split content into chunks of max_token_length
+    content_chunks = [content[i:i+max_token_length] for i in range(0, len(content), max_token_length)]
+
+    abusive = False
+    all_predictions = []
+
+    for chunk in content_chunks:
+        predictions = toxicity_detector(chunk)
+        all_predictions.extend(predictions)
+
+        # Check if the chunk is abusive
+        if any(pred["label"].lower() == "toxic" and pred["score"] >= threshold for pred in predictions):
+            abusive = True
+            break  # Stop processing further if any chunk is abusive
+
+    return abusive, all_predictions
 
 def role_required(role=None):
     def decorator(func):
@@ -531,7 +548,6 @@ def questions():
 
     if request.method=='POST': # Add the question
         question=request.form.get('question')
-        print("hwlloe question is working")
         question=questions(question=question,userid=session['user_id'].first(), plus_one=0, official_answer="")
         db.session.add(question)
         db.session.commit()
@@ -567,7 +583,6 @@ def questions():
         questions = Questions.query.all()
         for question in questions:
             question_whole.append(question.serializer())
-        print(question_whole)
         return render_template('questions.html',questions=question_whole)
 
 
@@ -615,7 +630,6 @@ def questions_details(question_id):
 
     else: # Get all questions
         questions=Questions.query.filter_by(questionid=question_id).first()
-        print(questions.serializer())
         
         timestamp = questions.date
 
@@ -630,7 +644,6 @@ def questions_details(question_id):
         answers_list=[]
         for answer in answer_all:
             answers_list.append(answer.serializer())
-        print(answers_list)
 
         return render_template('QuestionDetails.html',question=questions.serializer(),relative_time=relative_time,user_question=user_question,answers=answers_list)
 
@@ -640,7 +653,6 @@ def ask_question_function(question_id, org_id, title, body, tags):
     with app.app_context():
         prompt = "Answer the given question: " + title + body + "from tag" + " ".join(tags)
         response = ollama.generate(model='llama3.2', prompt=prompt)
-        print(response["response"])
 
         is_toxic, details = is_abusive(response["response"])
         if not is_toxic:
