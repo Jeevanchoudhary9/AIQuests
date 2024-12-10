@@ -1,13 +1,18 @@
 {% extends "layout.html" %}
 
 {% block title %}
-  Ask a Question
+  Home - Your Gateway to Programming Knowledge
 {% endblock %}
+
+{% block navbar %}
+  {% include "UserNavbar.html" %}
+{% endblock %}
+
 
 {% block style %}
   <style>
 
-    .askquestioncontainer {
+    .homecontainer {
       padding-top: 50px; /* Margin from top */
     }
   </style>

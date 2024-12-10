@@ -687,7 +687,7 @@ def ask_question():
         is_toxic, details = is_abusive(title + ' ' + body + ' ' + tags)
 
         if is_toxic:
-            flash('The question content is toxic cannot be posted. We apologize for the inconvenience.', 'error')
+            flash('The question content is toxic/abusive cannot be posted. We apologize for the inconvenience.', 'error')
             return redirect(url_for('ask_question'))
 
          # Basic validation to check if all fields are filled
