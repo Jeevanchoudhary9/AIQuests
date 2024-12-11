@@ -114,6 +114,7 @@ def role_required(role=None):
     return decorator
 
 
+
 def send_email(to_email, subject, html_content,attachment=None):
     # Gmail SMTP server details
     smtp_server = 'smtp.gmail.com'
@@ -162,11 +163,12 @@ def send_email(to_email, subject, html_content,attachment=None):
 # NOTE: This route takes to landing page
 @app.route('/')
 def index():
-    return render_template('Landingpage.html')
+    return render_template('Landingpage.html',nav="Welcome")
 
 
 # NOTE: Organization dashboard
 @app.route('/dashboard/organization')
+@role_required('organization')
 def organization_dashboard():
     questions = [
         {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
@@ -174,12 +176,24 @@ def organization_dashboard():
         {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
     ]
 
-    invites = Invites.query.all()
     all_invites = []
-    for invite in invites:
+    # top 5 user having role user and moderator
+    top_5_user = Invites.query.filter(Invites.registered == True).order_by(Invites.date.desc()).limit(5).all()
+    top_5_moderator = Invites.query.filter(Invites.registered == False).order_by(Invites.date.desc()).limit(5).all()
+    for invite in top_5_user:
+        all_invites.append(invite.serializer())
+    for invite in top_5_moderator:
         all_invites.append(invite.serializer())
 
-    return render_template('OrganizationDashboard.html', questions=questions,invites=all_invites)
+    total_users=User.query.filter_by(organization=session['org_id']).count()
+    user = User.query.filter_by(organization=session['org_id']).all()
+    total_answers=0
+    total_questions=Questions.query.filter_by(orgid=session['org_id']).count()
+    for user in user:
+        total_answers = total_answers+Answers.query.filter_by(userid=user.userid).count()
+    content={'total_users':total_users,'total_questions':total_questions,'total_answers':total_answers}
+
+    return render_template('OrganizationDashboard.html', questions=questions,invites=all_invites,nav="Organization Dashboard",content=content)
 
 
 # NOTE: 
@@ -204,7 +218,7 @@ def user_dashboard():
         {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
     ]
     
-    return render_template('user_dashboard.html', questions=questions)
+    return render_template('user_dashboard.html', questions=questions,nav="User Dashboard")
 
 
 @app.route('/invite_user',methods=["POST"])
@@ -280,7 +294,7 @@ def userManager():
     all_invites = []
     for invite in invites:
         all_invites.append(invite.serializer())
-    return render_template('OrgUserManager.html',invites=all_invites)
+    return render_template('OrgUserManager.html',invites=all_invites,nav="User Manager")
 
 
 @app.route('/UserManager', methods=['POST'])
@@ -409,6 +423,12 @@ def UserManager_delete():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if session.get('user_id'):
+        if User.query.filter_by(userid=session.get('user_id')).first().role == 'moderator':
+            return redirect(url_for('moderator_dashboard'))
+        return redirect(url_for('user_dashboard'))
+    if session.get('org_id'):
+        return redirect(url_for('organization_dashboard'))
     if request.method == 'POST':
         role = request.form.get('role')
         email = request.form.get('email')
@@ -439,7 +459,7 @@ def login():
                 return redirect(url_for('organization_dashboard'))
             flash('Invalid organization credentials. Please try again.')
 
-    return render_template('login.html')
+    return render_template('login.html',nav="Login")
 
 
 @app.route('/register',methods=["GET", "POST"])
@@ -495,7 +515,7 @@ def register(code=None, email=None):
         
         return redirect(url_for('login'))
 
-    return render_template('register.html',code=code,email=email)
+    return render_template('register.html',code=code,email=email,nav="User Register")
 
 
 @app.route('/register/organization',methods=["GET", "POST"])
@@ -530,7 +550,7 @@ def OrganizationRegister():
             flash(['You have successfully registered','success'])
             return redirect(url_for('login'))
 
-    return render_template('organizationRegister.html')
+    return render_template('organizationRegister.html',nav="Organization Register")
 
 
 @app.route('/image/<int:id>')
@@ -583,7 +603,7 @@ def questions():
         questions = Questions.query.all()
         for question in questions:
             question_whole.append(question.serializer())
-        return render_template('questions.html',questions=question_whole)
+        return render_template('questions.html',questions=question_whole,nav="All Questions")
 
 
 @app.route('/questions_details/<int:question_id>', methods=['GET', 'POST'])
@@ -646,7 +666,7 @@ def questions_details(question_id):
         for answer in answer_all:
             answers_list.append(answer.serializer())
 
-        return render_template('QuestionDetails.html',question=questions.serializer(),relative_time=relative_time,user_question=user_question,answers=answers_list)
+        return render_template('QuestionDetails.html',question=questions.serializer(),relative_time=relative_time,user_question=user_question,answers=answers_list,nav="Question {}".format(question_id))
 
 
 def ask_question_function(question_id, org_id, title, body, tags):
@@ -735,7 +755,7 @@ def ask_question():
         flash(['Your question is being posted in the background!', 'success'])
         return redirect(url_for('ask_question'))  # Redirect to the same page or another page
     
-    return render_template('AskQuestion.html')
+    return render_template('AskQuestion.html',nav="Ask Question")
 
 
 @app.route('/<int:answer_id>/vote', methods=["POST"])
