@@ -11,7 +11,7 @@
   <nav>
     <div class="rectangle logo-rectangle">
       <div class="logo">
-        <a href="{{ url_for('login') }}" class="flex items-center space-x-2">
+        <a href="{{ url_for('login') }}" class="internal_link flex items-center space-x-2" >
           <svg
             class="h-8 w-8 text-blue-600"
             xmlns="http://www.w3.org/2000/svg"
@@ -32,13 +32,15 @@
     </div>
     <div class="rectangle links-rectangle">
       <div class="flex items-center justify-center w-full relative">
-        <div class="nav-left hidden">{{nav}}</div>
+        <div class="nav-left hidden"><a href="{{ url_for('index') }}" style="padding: 1rem;">{{nav}}</a></div>
         <ul class="nav-center flex hidden">
           {% if nav=='User Dashboard' %}
           <li><a href="{{ url_for('questions') }}">All Questions</a></li>
+          <li><a href="{{ url_for('myquestions') }}">My Questions</a></li>
           <li><a href="{{ url_for('ask_question') }}">Ask Question</a></li>
           {% elif nav=='Ask Question' %}
           <li><a href="{{ url_for('user_dashboard') }}">Dashboard</a></li>
+          <li><a href="{{ url_for('myquestions') }}">My Questions</a></li>
           <li><a href="{{ url_for('questions') }}">All Questions</a></li>
           {% elif nav=='Organization Dashboard' %}
           <li><a href="{{ url_for('userManager')}}">User Manager</a></li>
@@ -47,13 +49,16 @@
           {% elif nav=='All Questions' %}
           <li><a href="{{ url_for('user_dashboard') }}">Dashboard</a></li>
           <li><a href="{{ url_for('ask_question') }}">Ask Question</a></li>
+          <li><a href="{{ url_for('myquestions') }}">My Questions</a></li>
           {% elif nav.startswith('Question ') %}
           <li><a href="{{ url_for('user_dashboard') }}">Dashboard</a></li>
           <li><a href="{{ url_for('questions') }}">All Questions</a></li>
+          <li><a href="{{ url_for('myquestions') }}">My Questions</a></li>
           <li><a href="{{ url_for('ask_question') }}">Ask Question</a></li>
+          
 
           {% else %}
-          <li><a style="font-family:cursive">Welcome on AIQUEST</a></li>
+          <li><label style="font-family:cursive">Welcome on AIQUEST</label></li>
           {% endif%}
         </ul>
       </div>
@@ -154,6 +159,13 @@ nav {
     justify-content: center;
     max-width: 200px;
     min-height: 70px;
+  }
+
+  .internal_link {
+    max-width: 200px;
+    min-height: 70px;
+    padding-inline: 40px;
+
   }
   
   nav .links-rectangle {

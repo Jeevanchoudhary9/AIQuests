@@ -212,11 +212,16 @@ def moderator_dashboard():
 @app.route('/dashboard/user')
 @role_required("user")
 def user_dashboard():
-    questions = [
-        {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
-        {'id': 2, 'title': 'Best practices for React state management?', 'short_description': 'Looking for suggestions on managing state...', 'time_ago': '1 day', 'answer_count': 3, 'asker_name': 'Jane Smith'},
-        {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
-    ]
+
+    questions=Questions.query.filter_by(userid=session['user_id']).order_by(Questions.date.desc()).limit(5).all()
+    questions=[question.serializer() for question in questions]
+    
+
+    # questions = [
+    #     {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
+    #     {'id': 2, 'title': 'Best practices for React state management?', 'short_description': 'Looking for suggestions on managing state...', 'time_ago': '1 day', 'answer_count': 3, 'asker_name': 'Jane Smith'},
+    #     {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
+    # ]
     
     return render_template('user_dashboard.html', questions=questions,nav="User Dashboard")
 
@@ -600,7 +605,7 @@ def questions():
 
     else: # Get all questions
         question_whole=[]
-        questions = Questions.query.all()
+        questions = Questions.query.order_by(Questions.date.desc()).all()
         for question in questions:
             question_whole.append(question.serializer())
         return render_template('questions.html',questions=question_whole,nav="All Questions")
@@ -679,7 +684,7 @@ def ask_question_function(question_id, org_id, title, body, tags):
         if not is_toxic:
             answer = response["response"]
 
-            extracted_keywords = [keyword[0] for keyword in model.extract_keywords(answer)] + tags
+            # extracted_keywords = [keyword[0] for keyword in model.extract_keywords(answer)] + tags
 
             new_answer = Answers(
                 answer=answer,
@@ -691,17 +696,21 @@ def ask_question_function(question_id, org_id, title, body, tags):
                 date=datetime.datetime.now()
             )
 
-            for key in extracted_keywords:
-                if_keyword_exist = Keywords.query.filter_by(keyword=key.lower()).first()
-                if if_keyword_exist:
-                    if_keyword_exist.count += 1
-                else:
-                    new_keyword = Keywords(
-                        keyword=lemmatize_text(key.lower()),
-                        organization=org_id,
-                        count=1,
-                    )
-                    db.session.add(new_keyword)
+            question = Questions.query.filter_by(questionid=question_id).first()
+            question.ai_answer = True
+
+
+            # for key in extracted_keywords:
+            #     if_keyword_exist = Keywords.query.filter_by(keyword=key.lower()).first()
+            #     if if_keyword_exist:
+            #         if_keyword_exist.count += 1
+            #     else:
+            #         new_keyword = Keywords(
+            #             keyword=lemmatize_text(key.lower()),
+            #             organization=org_id,
+            #             count=1,
+            #         )
+            #         db.session.add(new_keyword)
             db.session.add(new_answer)
             db.session.commit()
         print("thread ending")
@@ -803,6 +812,36 @@ def vote(answer_id):
     #     "vote": new_vote.vote,
     #     "questionid": new_vote.questionid
     # })
+
+@app.route('/myquestions',methods=['GET'])
+@role_required('user')
+def myquestions():
+    questions=Questions.query.filter_by(userid=session['user_id']).order_by(Questions.date.desc()).all()
+    questions=[question.serializer() for question in questions]
+    return render_template('my_questions.html',questions=questions,nav="My Questions")
+
+@app.route('/questions_delete/<int:question_id>',methods=['GET'])
+@role_required('user')
+def questions_delete(question_id):
+    user=User.query.filter_by(userid=session['user_id']).first()
+    question=Questions.query.filter_by(questionid=question_id).first()
+    if question.userid!=user.userid:
+        flash('You are not authorized to delete this question')
+        return redirect(url_for('myquestions'))
+    answers=Answers.query.filter_by(questionid=question_id).all()
+    plus_ones=Plus_ones.query.filter_by(questionid=question_id).all()
+    votes=Votes.query.filter_by(questionid=question_id).all()
+    for answer in answers:
+        db.session.delete(answer)
+    for plus_one in plus_ones:
+        db.session.delete(plus_one)
+    for vote in votes:
+        db.session.delete(vote)
+    db.session.delete(question)
+    db.session.commit()
+    flash(['Question deleted successfully','success'])
+    return redirect(url_for('myquestions'))
+
 
 
 @app.route('/<int:question_id>/plusone', methods=["POST"])

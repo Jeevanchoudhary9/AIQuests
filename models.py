@@ -1,3 +1,4 @@
+import html
 from app import app
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -103,31 +104,30 @@ class Answers(db.Model):
         formatted_answer = ''
         open_code = True 
         parts = self.answer.split('```')
-        
         for i, part in enumerate(parts):
             if i == 0:
-                formatted_answer += part  # Add the first part as it is (before the first code block)
+                formatted_answer += html.escape(part)  # Add the first part as it is (before the first code block)
             else:
                 if open_code:
                     parts_lines = part.splitlines()
                     if parts_lines:
+                        # Skip the first line and don't add it to the formatted_answer
                         class_name = parts_lines[0].split()[0]
-                        part = '\n'.join(['#'+parts_lines[0]+' code is as follows:']+parts_lines[1:])  # Remove the first line of the first part
-                    
+                        part = '\n'.join(parts_lines[1:])  # Remove the first line of the part
+                        
                     # Start a new section for the code block
-                    formatted_answer += f"""
-                    <code class="{class_name}">
-    <div class="bg-gray-50 p-4 dark:bg-gray-800 pt-0">
-                        {part}
-                    """
+                    formatted_answer += f'''<code class="{class_name}"><div class="bg-gray-50 p-4 dark:bg-gray-800">{html.escape(part)}'''
                 else:
                     # Close the previous section and append the next part
-                    formatted_answer += f"</div></code>{part}"
+                    formatted_answer += f"</div></code>{html.escape(part)}"
                 
                 open_code = not open_code  # Toggle the code block state
         
         # Replace bold markdown syntax with HTML <strong> tag
         formatted_answer = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', formatted_answer)
+        # Replace `text` with <strong>text</strong>
+        formatted_answer = re.sub(r'`(.*?)`', r'<strong>\1</strong>', formatted_answer)
+        formatted_answer = re.sub(r'^\s*-\s*', '• ', formatted_answer, flags=re.MULTILINE)
 
         return {
             'answerid': self.answerid,

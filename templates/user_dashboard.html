@@ -14,6 +14,7 @@
 
     .homecontainer {
       padding-top: 50px; /* Margin from top */
+      padding-bottom: 50px; /* Margin from bottom */
     }
   </style>
 {% endblock %}
@@ -69,26 +70,54 @@
     <div class="bg-white rounded-lg shadow-md p-8">
       <h2 class="text-2xl font-bold mb-6">Recent Questions</h2>
       <div class="space-y-6">
+        {% if questions %}
         {% for question in questions %}
         <div class="border-b pb-6 last:border-0">
           <a
-            href=""
+            href=" {{url_for('questions_details', question_id=question.questionid) }}"
             class="text-xl font-semibold text-blue-600 hover:text-blue-800 mb-2 block"
           >
-            {{ question.title }}
+            {{ question.question_title }}
           </a>
           <p class="text-gray-600 mb-4">
-            {{ question.short_description }}
+            {{ question.question_detail }}
           </p>
           <div class="flex items-center text-sm text-gray-500">
-            <span>Asked {{ question.time_ago }}</span>
+            <span>Asked {{ question.relative_time }}</span>
             <span class="mx-2">•</span>
-            <span>{{ question.answer_count }} answers</span>
+            <span>{{ question.no_of_ans }} answers</span>
             <span class="mx-2">•</span>
-            <span>{{ question.asker_name }}</span>
+            <span>{{ question.email }}</span>
+            {% if question.ai_answer %}
+              <span class="mx-2">•</span>
+              <span>Answered by AI</span>
+            {% endif %}
           </div>
         </div>
         {% endfor %}
+        {% else %}
+        <div id="alert-additional-content-5" class="p-4 border border-gray-300 rounded-lg bg-gray-50 dark:border-gray-600 dark:bg-gray-800" role="alert">
+          <div class="flex items-center">
+            <svg class="flex-shrink-0 w-4 h-4 me-2 dark:text-gray-300" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+            </svg>
+            <span class="sr-only">Info</span>
+            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-300">No Questions Posted Till Now</h3>
+          </div>
+          <div class="mt-2 mb-4 text-sm text-gray-800 dark:text-gray-300">
+            Get Started By Postsing Your First Question
+          </div>
+          <div class="flex">
+            <button type="button" class="text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-xs px-3 py-1.5 me-2 text-center inline-flex items-center dark:bg-gray-600 dark:hover:bg-gray-500 dark:focus:ring-gray-800">
+              
+              <svg class="me-2 h-3 w-3 dark:text-gray-300 rtl:rotate-180 w-3.5 h-3.5 ms-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 5h12m0 0L9 1m4 4L9 9"/>
+            </svg>
+              Ask Your First Question
+            </button>
+          </div>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
