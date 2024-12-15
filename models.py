@@ -141,7 +141,8 @@ class Answers(db.Model):
             'date': self.date,
             'username': User.query.filter_by(userid=self.userid).first(),
             'relative_time': humanize.naturaltime(datetime.datetime.now() - self.date),
-            'formatted_answer': formatted_answer
+            'formatted_answer': formatted_answer,
+            'votes': self.upvotes - self.downvotes
         }
 
     

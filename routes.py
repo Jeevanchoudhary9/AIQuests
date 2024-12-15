@@ -872,6 +872,7 @@ def vote(answer_id):
     #     "questionid": new_vote.questionid
     # })
 
+
 @app.route('/myquestions',methods=['GET'])
 @role_required('user')
 def myquestions():
@@ -1040,8 +1041,33 @@ def upvote_answer(answer_id):
     new_count = Votes.query.filter_by(answerid=answer_id).count()
 
 
-    return jsonify({"success": True, "new_count": new_count, "status": True})
+    return jsonify({"success": True, "new_count": new_count})
 
+
+
+@app.route('/downvoteans/<int:answer_id>',methods=['POST'])
+@role_required('user')
+def downvoteans(answer_id):
+    if not session.get('user_id'):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+    
+    vote = Votes.query.filter_by(answerid=answer_id, userid=session.get('user_id')).first()
+    if vote:
+        db.session.delete(vote)
+        Answers.query.filter_by(answerid=answer_id).first().downvotes -= 1
+        db.session.commit()
+        new_count = Votes.query.filter_by(answerid=answer_id).count()
+        return jsonify({"success": True, "new_count": new_count, "status": False})
+    
+    question_id=Answers.query.filter_by(answerid=answer_id).first().questionid
+    vote = Votes(answerid=answer_id, userid=session.get('user_id'), date=datetime.datetime.now(),questionid=question_id, vote=-1)
+    Answers.query.filter_by(answerid=answer_id).first().downvotes += 1
+    db.session.add(vote)
+    db.session.commit()
+    new_count = Votes.query.filter_by(answerid=answer_id).count()
+
+    print('downvote')
+    return jsonify({"message": "Vote updated successfully", "new_count": "50"})
 
 
 @app.route('/upload', methods=['POST'])
