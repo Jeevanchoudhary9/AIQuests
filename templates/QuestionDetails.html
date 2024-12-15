@@ -38,14 +38,46 @@
 
     <div class="flex gap-6">
       <div class="flex flex-col items-center space-y-2">
-        <ArrowUp
-          class="h-8 w-8 text-gray-400 hover:text-orange-500 cursor-pointer"
-        />
-        <span class="font-semibold text-xl"> {{question.plus_one}} </span>
-        <ArrowDown
-          class="h-8 w-8 text-gray-400 hover:text-orange-500 cursor-pointer"
-        />
+        <div class="flex flex-col {{ 'space-y-2' if question.status else 'space-y-reverse-2' }} items-center">
+          
+          {% if question.status == True %}
+
+            <!-- Arrow down when status is False -->
+            <svg id="upvote-icon"
+              class="h-8 w-8 text-gray-400 hover:text-orange-500 cursor-pointer"
+              width="20px"
+              height="20px"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              xmlns="http://www.w3.org/2000/svg"
+              data-question-id="{{ question.questionid }}">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"  d="M19 9l-7 7-7-7" ></path>
+            </svg>
+
+          {% else %}
+            <!-- Arrow up when status is True -->
+            <svg id="upvote-icon"
+              class="h-8 w-8 text-gray-400 hover:text-orange-500 cursor-pointer"
+              width="20px"
+              height="20px"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              xmlns="http://www.w3.org/2000/svg"
+              data-question-id="{{ question.questionid }}">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"  d="M5 15l7-7 7 7" ></path>
+            </svg>
+          {% endif %}
+      
+          <!-- Upvote count -->
+          <span id="upvote-count" class="font-semibold text-lg">
+            {{ question.plus_one }}
+          </span>
+        </div>
       </div>
+      
+      
 
       <div class="flex-1">
         <div class="prose max-w-none">
@@ -104,47 +136,60 @@
     {% endif %}
 
     {% for answer in answers %}
-    <div class="bg-white rounded-lg shadow-md p-6 mb-4">
-      <div class="flex gap-6">
-        <div style="text-align: center">
-          <button
-            class="upvote-button"
-            data-answer-id="{{ answer.answerid }}"
-            style="background: none; border: none; cursor: pointer"
-          >
-            <span>⬆️</span>
-          </button>
-          <span
-            id="voteCount-{{ answer.answerid }}"
-            style="font-size: 1.2em; font-weight: bold"
-          >
-            {{ answer.vote_count }} 0
+    <!-- In the Answer Section -->
+<div class="bg-white rounded-lg shadow-md p-6 mb-4">
+  <div class="flex gap-6">
+    <div style="text-align: center">
+      <!-- Upvote Arrow -->
+      <svg id="upvote-icon-ans"
+        class="h-8 w-8 text-gray-400 hover:text-orange-500 cursor-pointer"
+        width="20px"
+        height="20px"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        xmlns="http://www.w3.org/2000/svg"
+        data-answer-id="{{ answer.answerid }}">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+      </svg>
+
+      <!-- Downvote Arrow -->
+      <svg id="downvote-icon-ans"
+        class="h-8 w-8 text-gray-400 hover:text-orange-500 cursor-pointer"
+        width="20px"
+        height="20px"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        xmlns="http://www.w3.org/2000/svg"
+        data-answer-id="{{ answer.answerid }}">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+      </svg>
+
+      <!-- Vote Count -->
+      <span id="upvote-count-ans" class="font-semibold text-lg">
+        {{ answer.upvote_count }}
+      </span>
+    </div>
+
+    <div>
+      <pre class="answer-wrap">{{answer.formatted_answer | safe}}</pre>
+
+      <div class="mt-4 flex items-center justify-end text-sm text-gray-500">
+        {% if answer.username.username == "AI@aiquest.com" %}
+          <span>🤖 Answered by AI</span>
+        {% else %}
+          <span>
+            {% if answer.marked_as_official %} ✅ {% endif %} answered
+            {{answer.relative_time}} by {{answer.username}}
           </span>
-          <button
-            class="downvote-button"
-            data-answer-id="{{ answer.answerid }}"
-            style="background: none; border: none; cursor: pointer"
-          >
-            <span>⬇️</span>
-          </button>
-        </div>
-
-        <div>
-            <pre class="answer-wrap">{{answer.formatted_answer | safe}}</pre>
-
-          <div class="mt-4 flex items-center justify-end text-sm text-gray-500">
-            {% if answer.username.username == "AI@aiquest.com" %}
-            <span>🤖 Answered by AI</span>
-            {% else %}
-            <span>
-              {% if answer.marked_as_official %} ✅ {% endif %} answered
-              {{answer.relative_time}} by {{answer.username}}
-            </span>
-            {% endif %}
-          </div>
-        </div>
+        {% endif %}
       </div>
     </div>
+  </div>
+</div>
+
+
     {% endfor %}
   </div>
 
@@ -186,4 +231,68 @@
   </div>
 </div>
 </div>
+{% endblock %}
+{% block script %}
+<script>
+  // upvote process
+  document.addEventListener("DOMContentLoaded", () => {
+  const upvoteIconsAns = document.querySelectorAll("#upvote-icon-ans");
+  const downvoteIconsAns = document.querySelectorAll("#downvote-icon-ans");
+
+  upvoteIconsAns.forEach((upvoteIcon) => {
+    const upvoteCount = upvoteIcon.nextElementSibling; // The count next to the icon
+    upvoteIcon.addEventListener("click", () => {
+      const answerId = upvoteIcon.getAttribute("data-answer-id");
+
+      fetch(`/upvoteans/${answerId}/upvote`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "upvote" }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            upvoteCount.textContent = data.new_count;
+            // Update the arrow status if needed
+            const path = upvoteIcon.querySelector("path");
+            path.setAttribute("d", data.status ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7");
+          }
+        })
+        .catch((error) => {
+          alert(`Upvote failed: ${error}`);
+        });
+    });
+  });
+
+  downvoteIconsAns.forEach((downvoteIcon) => {
+    const upvoteCount = downvoteIcon.previousElementSibling; // The count next to the upvote icon
+    downvoteIcon.addEventListener("click", () => {
+      const answerId = downvoteIcon.getAttribute("data-answer-id");
+
+      fetch(`/upvoteans/${answerId}/downvote`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "downvote" }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            upvoteCount.textContent = data.new_count;
+            // Update the arrow status if needed
+            const path = downvoteIcon.querySelector("path");
+            path.setAttribute("d", data.status ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7");
+          }
+        })
+        .catch((error) => {
+          alert(`Downvote failed: ${error}`);
+        });
+    });
+  });
+});
+
+</script>
 {% endblock %}

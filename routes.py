@@ -3,16 +3,18 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from sqlalchemy import distinct
 from app import app
 from functools import wraps
-from models import db, User, Questions, Plus_ones, Answers,Votes,Organizations,Moderators,Labels,Invites,Keywords
+from models import db, User, Questions, Plus_ones, Answers,Votes,Organizations,Moderators,Labels,Invites,Keywords, Docs
 import random
 import ollama
 import re
 import humanize
 from transformers import BertTokenizer, BertModel
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 import torch
 import io
 import random
+import os
 import string
 from functools import wraps
 from email import encoders
@@ -24,11 +26,68 @@ import smtplib
 import threading
 from flask import jsonify
 from keybert import KeyBERT
+import json
+import datetime
+from datetime import timedelta
+import random
+from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
+from transformers import pipeline
+
+ALLOWED_EXTENSIONS = {'pdf'}
+
+# Helper function to check file extension
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 model = KeyBERT('distilbert-base-nli-mean-tokens')
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 model = BertModel.from_pretrained('bert-base-uncased')
+
+
+def generate_demo_data():
+    # Generate sample time-series data for the past 30 days
+    dates = [(datetime.datetime.now() - timedelta(days=x)).strftime('%Y-%m-%d') for x in range(30)]
+    
+    return {
+        'user_metrics': {
+            'total_users': 1250,
+            'active_users': 890,
+            'new_users_today': 25
+        },
+        'content_metrics': {
+            'total_questions': 3450,
+            'total_answers': 12340,
+            'ai_answers': 5670
+        },
+        'trending_tags': [
+            {'name': 'Python', 'count': 450},
+            {'name': 'JavaScript', 'count': 380},
+            {'name': 'React', 'count': 320},
+            {'name': 'Flutter', 'count': 290},
+            {'name': 'Docker', 'count': 250}
+        ],
+        'time_series_data': {
+            'dates': dates,
+            'questions': [random.randint(10, 50) for _ in range(30)],
+            'answers': [random.randint(30, 100) for _ in range(30)]
+        },
+        'top_questions': [
+            {'title': 'How to implement LinkedList in Rust?', 'views': 1200, 'answers': 5},
+            {'title': 'Best practices for React hooks', 'views': 980, 'answers': 8},
+            {'title': 'Python async vs threading', 'views': 850, 'answers': 6},
+            {'title': 'Docker container networking', 'views': 720, 'answers': 4},
+            {'title': 'Flutter state management', 'views': 690, 'answers': 7}
+        ],
+        'moderation_stats': {
+            'flagged_content': 23,
+            'pending_reviews': 12,
+            'resolved_today': 45
+        }
+    }
+
+
 
 def get_bert_embedding(text):
     """
@@ -40,9 +99,6 @@ def get_bert_embedding(text):
     embedding = outputs.last_hidden_state.mean(dim=1).detach().numpy()
     return embedding
 
-from nltk.stem import WordNetLemmatizer
-from nltk.tokenize import word_tokenize
-from transformers import pipeline
 
 # Initialize lemmatizer
 lemmatizer = WordNetLemmatizer()
@@ -193,7 +249,10 @@ def organization_dashboard():
         total_answers = total_answers+Answers.query.filter_by(userid=user.userid).count()
     content={'total_users':total_users,'total_questions':total_questions,'total_answers':total_answers}
 
-    return render_template('OrganizationDashboard.html', questions=questions,invites=all_invites,nav="Organization Dashboard",content=content)
+    return render_template('OrganizationDashboard.html',
+                           data = generate_demo_data(),
+                           questions=questions,invites=all_invites,
+                           nav="Organization Dashboard",content=content)
 
 
 # NOTE: 
@@ -873,6 +932,7 @@ def plus_one(question_id):
 
 
 @app.route('/answers/<int:question_id>', methods=['GET', 'POST', 'DELETE', 'PUT'])
+@role_required('user')
 def answers_route(question_id):
     
         if request.method=='POST':
@@ -931,6 +991,116 @@ def answers_route(question_id):
             return redirect(url_for('questions'))
 
 
+@app.route('/upvote/<int:question_id>', methods=['POST'])
+@role_required('user')
+def upvote_question(question_id):
+
+    if not session.get('user_id'):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    # Fetch the question from the database
+    # Plus_ones.query.filter_by(questionid=question_id, userid=session.get('user_id')).first()
+
+    plus_one = Plus_ones.query.filter_by(questionid=question_id, userid=session.get('user_id')).first()
+    print(plus_one)
+    if plus_one:
+        db.session.delete(plus_one)
+        Questions.query.filter_by(questionid=question_id).first().plus_one -= 1
+        db.session.commit()
+        new_count = Plus_ones.query.filter_by(questionid=question_id).count()
+        return jsonify({"success": True, "new_count": new_count, "status": False})
+    plus_one = Plus_ones(questionid=question_id, userid=session.get('user_id'), date=datetime.datetime.now())
+    Questions.query.filter_by(questionid=question_id).first().plus_one += 1
+    db.session.add(plus_one)
+    db.session.commit()
+    new_count = Plus_ones.query.filter_by(questionid=question_id).count()
+
+    return jsonify({"success": True, "new_count": new_count, "status": True})
+
+@app.route('/upvoteans/<int:answer_id>', methods=['POST'])
+@role_required('user')
+def upvote_answer(answer_id):
+    
+    if not session.get('user_id'):
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+    
+    vote = Votes.query.filter_by(answerid=answer_id, userid=session.get('user_id')).first()
+    if vote:
+        db.session.delete(vote)
+        Answers.query.filter_by(answerid=answer_id).first().upvotes -= 1
+        db.session.commit()
+        new_count = Votes.query.filter_by(answerid=answer_id).count()
+        return jsonify({"success": True, "new_count": new_count, "status": False})
+    
+    question_id=Answers.query.filter_by(answerid=answer_id).first().questionid
+    vote = Votes(answerid=answer_id, userid=session.get('user_id'), date=datetime.datetime.now(),questionid=question_id, vote=1)
+    Answers.query.filter_by(answerid=answer_id).first().upvotes += 1
+    db.session.add(vote)
+    db.session.commit()
+    new_count = Votes.query.filter_by(answerid=answer_id).count()
+
+
+    return jsonify({"success": True, "new_count": new_count, "status": True})
+
+
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    docdesc = request.form.get('docdesc') if request.form.get('docdesc') else ''
+    orgid = session.get('org_id')
+
+    # Check if a file is included
+    if 'file' not in request.files:
+        flash('No file part in the form')
+        return redirect(request.url)
+
+    file = request.files['file']
+    # Name of the file uploaded
+    docname = docname.split('.')[0]
+
+    # If no file is selected
+    if file.filename == '':
+        flash('No file selected')
+        return redirect(request.url)
+
+    # Validate and process the file
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        # Save the file to the local storage
+        try:
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            file.save(file_path)
+        except Exception as e:
+            flash(f"Failed to save the file: {e}")
+            return redirect(request.url)
+
+        # Save file details to the database
+        new_doc = Docs(
+            docname=docname,
+            docdesc=docdesc,
+            docpath=file_path,
+            orgid=orgid
+        )
+        try:
+            db.session.add(new_doc)
+            db.session.commit()
+            flash('File successfully uploaded and details saved!')
+            return redirect(url_for('upload_form'))  # Replace with the desired redirect
+        except Exception as e:
+            flash(f"Failed to save file details to database: {e}")
+            db.session.rollback()
+            return redirect(request.url)
+    else:
+        flash('Invalid file format. Only PDF files are allowed.')
+        return redirect(request.url)
+
+
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    data = generate_demo_data()
+    return render_template('admin_dashboard.html', data=data)
 
 @app.route('/logout')
 def logout():

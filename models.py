@@ -69,7 +69,8 @@ class Questions(db.Model):
             'tags': self.tags,
             'no_of_ans': Answers.query.filter_by(questionid=self.questionid).count(),
             'relative_time' : humanize.naturaltime(datetime.datetime.now() - self.date),
-            'orgid': self.orgid
+            'orgid': self.orgid,
+            'status': True if Plus_ones.query.filter_by(userid=self.userid, questionid=self.questionid).first() else False
         }
 
 
@@ -340,6 +341,28 @@ class Invites(db.Model):
             'date': self.date,
             'code': self.code,
             'registered': self.registered
+        }
+    
+
+class Docs(db.Model):
+    __tablename__ = 'docs'
+    docid = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False, unique=True)
+    docname = db.Column(db.String(50), nullable=False)  # Name of the document
+    docdesc = db.Column(db.String(200), nullable=False)  # Description of the document
+    docpath = db.Column(db.String(200), nullable=False)  # Path to the file stored on local storage
+    orgid = db.Column(db.Integer, db.ForeignKey('organizations.orgid'), nullable=False)
+
+    def __repr__(self):
+        return f'<Doc {self.docid}>'
+
+    def serializer(self):
+        return {
+            'docid': self.docid,
+            'docname': self.docname,
+            'docdesc': self.docdesc,
+            'docpath': self.docpath,
+            'orgid': self.orgid,
+            'uploaded_by': self.uploaded_by
         }
         
 with app.app_context():

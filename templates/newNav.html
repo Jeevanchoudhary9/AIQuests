@@ -44,6 +44,8 @@
           <li><a href="{{ url_for('questions') }}">All Questions</a></li>
           {% elif nav=='Organization Dashboard' %}
           <li><a href="{{ url_for('userManager')}}">User Manager</a></li>
+          <li><a href="{{ url_for('questions') }}">All Questions</a></li>
+          <li><a href="{{ url_for('documents') }}">Documents</a></li>
           {% elif nav=='User Manager' %}
           <li><a href="{{ url_for('organization_dashboard') }}">Organization Dashboard</a></li>
           {% elif nav=='All Questions' %}
