@@ -1118,7 +1118,7 @@ def upload_file():
 
     file = request.files['file']
     # Name of the file uploaded
-    docname = docname.split('.')[0]
+    docname = file.filename
 
     # If no file is selected
     if file.filename == '':
@@ -1149,7 +1149,7 @@ def upload_file():
             db.session.add(new_doc)
             db.session.commit()
             flash('File successfully uploaded and details saved!')
-            return redirect(url_for('upload_form'))  # Replace with the desired redirect
+            return redirect(url_for('login'))  # Replace with the desired redirect
         except Exception as e:
             flash(f"Failed to save file details to database: {e}")
             db.session.rollback()
