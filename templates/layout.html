@@ -120,7 +120,7 @@
             } else {
               //console.log("No new notifications.", data.notifications);
               // Retry after 30 seconds if no new notifications
-              setTimeout(checkNotification, 60000);  // Retry after 30 seconds
+              ///////////////////////////////////////////////////setTimeout(checkNotification, 60000);  // Retry after 30 seconds
             }
           })
           .catch(error => console.error("Error checking notifications:", error));
@@ -132,7 +132,7 @@
       };
     
       // Check every 30 seconds, even if the page is reloaded
-      setInterval(checkNotification, 30000);  // Check every 30 seconds
+      ///////////////////////////////////////////////////////////////setInterval(checkNotification, 30000);  // Check every 30 seconds
       
       // Check if the Notification API is supported
       if ("Notification" in window) {
