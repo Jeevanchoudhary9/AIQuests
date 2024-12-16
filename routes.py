@@ -226,6 +226,7 @@ def send_email(to_email, subject, html_content,attachment=None):
 # NOTE: This route takes to landing page
 @app.route('/')
 def index():
+    flash(['Welcome to AIQuest','success','Welcome'])
     return render_template('Landingpage.html',nav="Welcome")
 
 
@@ -765,7 +766,7 @@ def questions_details(question_id):
             # db.session.commit()
 
 
-        flash(['Answer added successfully','success'])
+        flash(['Answer added successfully','success','Answer Provided'])
         return redirect(url_for('questions_details', question_id=question_id))
             
 

@@ -26,62 +26,107 @@
     <!-- Include Navbar -->
     {% include 'UserNavbar.html' %}
 
-
     <!-- Flash Message Handling -->
-    {% with messages = get_flashed_messages() %} {% if messages %} {% for
-    message in messages %} {% if message[1] == "success" %}
-    <div
-      class="bg-green-100 border border-green-100 text-green-700 px-4 py-4 rounded relative alert"
-      role="alert"
-    >
-      <span class="block sm:inline">{{ message[0] }}</span>
-      <button
-        type="button"
-        class="absolute top-0 bottom-0 right-0 px-4 py-3"
-        data-dismiss="alert"
-        aria-label="Close"
-        onclick="this.parentNode.remove()"
-      >
-        <svg
-          class="fill-current h-6 w-6 text-green-500"
-          role="button"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-        >
-          <title>Close</title>
-          <path
-            d="M14.348 5.652a.5.5 0 0 1 0 .707L10.06 10l4.288 4.646a.5.5 0 0 1-.708.708L9.353 10l-4.647 4.354a.5.5 0 1 1-.708-.707L8.646 10 4 5.348a.5.5 0 1 1 .708-.708L10 9.354l4.354-4.647a.5.5 0 0 1 .708 0z"
-          />
-        </svg>
-      </button>
-    </div>
-    {% else %}
-    <div
-      class="bg-red-100 border border-red-100 text-red-700 px-4 py-4 rounded relative alert"
-      role="alert"
-    >
-      <span class="block sm:inline">{{ message }}</span>
-      <button
-        type="button"
-        class="absolute top-0 bottom-0 right-0 px-4 py-3"
-        data-dismiss="alert"
-        aria-label="Close"
-        onclick="this.parentNode.remove()"
-      >
-        <svg
-          class="fill-current h-6 w-6 text-red-500"
-          role="button"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-        >
-          <title>Close</title>
-          <path
-            d="M14.348 5.652a.5.5 0 0 1 0 .707L10.06 10l4.288 4.646a.5.5 0 0 1-.708.708L9.353 10l-4.647 4.354a.5.5 0 1 1-.708-.707L8.646 10 4 5.348a.5.5 0 1 1 .708-.708L10 9.354l4.354-4.647a.5.5 0 0 1 .708 0z"
-          />
-        </svg>
-      </button>
-    </div>
-    {% endif %} {% endfor %} {% endif %} {% endwith %}
+    {% with messages = get_flashed_messages() %} 
+      {% if messages %} 
+        {% for message in messages %}
+          {% if message[1] == "success" %}
+            <div
+              class="bg-green-100 border border-green-100 text-green-700 px-4 py-4 rounded relative alert"
+              role="alert"
+            >
+              <span class="block sm:inline">{{ message[0] }}</span>
+              <button
+                type="button"
+                class="absolute top-0 bottom-0 right-0 px-4 py-3"
+                data-dismiss="alert"
+                aria-label="Close"
+                onclick="this.parentNode.remove()"
+              >
+                <svg
+                  class="fill-current h-6 w-6 text-green-500"
+                  role="button"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                >
+                  <title>Close</title>
+                  <path
+                    d="M14.348 5.652a.5.5 0 0 1 0 .707L10.06 10l4.288 4.646a.5.5 0 0 1-.708.708L9.353 10l-4.647 4.354a.5.5 0 1 1-.708-.707L8.646 10 4 5.348a.5.5 0 1 1 .708-.708L10 9.354l4.354-4.647a.5.5 0 0 1 .708 0z"
+                  />
+                </svg>
+              </button>
+            </div>
+          {% else %}
+            <div
+              class="bg-red-100 border border-red-100 text-red-700 px-4 py-4 rounded relative alert"
+              role="alert"
+            >
+              <span class="block sm:inline">{{ message }}</span>
+              <button
+                type="button"
+                class="absolute top-0 bottom-0 right-0 px-4 py-3"
+                data-dismiss="alert"
+                aria-label="Close"
+                onclick="this.parentNode.remove()"
+              >
+                <svg
+                  class="fill-current h-6 w-6 text-red-500"
+                  role="button"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                >
+                  <title>Close</title>
+                  <path
+                    d="M14.348 5.652a.5.5 0 0 1 0 .707L10.06 10l4.288 4.646a.5.5 0 0 1-.708.708L9.353 10l-4.647 4.354a.5.5 0 1 1-.708-.707L8.646 10 4 5.348a.5.5 0 1 1 .708-.708L10 9.354l4.354-4.647a.5.5 0 0 1 .708 0z"
+                  />
+                </svg>
+              </button>
+            </div>
+          {% endif %}
+          
+          <!-- Check if message[2] is "pushnot" -->
+          <!-- Check if message[2] is "pushnot" -->
+{% if message[2] != None %}
+<script>
+  // Check if the Notification API is supported
+  if ("Notification" in window) {
+    // Check the current notification permission
+    if (Notification.permission === "granted") {
+      // If permission is already granted, show the notification
+      new Notification("{{ message[2] }}", {
+        body: "{{ message[0] }}", // Use message[0] as the notification content
+        icon: "https://i.ibb.co/VwJH5Tz/Screenshot-2024-12-16-at-8-54-55-PM.png" // Optionally use a custom icon
+        //https://picsum.photos/200
+      });
+    } else if (Notification.permission === "denied") {
+      // If permission was denied earlier, notify the user
+      alert("You have previously denied notifications. Please enable them in your browser settings to receive notifications.");
+    } else {
+      // Request permission for notifications if it hasn't been granted or denied yet
+      Notification.requestPermission().then(function(permission) {
+        if (permission === "granted") {
+          // Display the notification with the message[0] content
+          new Notification("{{ message[2] }}", {
+            body: "{{ message[0] }}", // Use message[0] as the notification content
+            icon: "https://i.ibb.co/VwJH5Tz/Screenshot-2024-12-16-at-8-54-55-PM.png" // Optionally use a custom icon
+          });
+        } else {
+          alert("Notification permission denied.");
+        }
+      }).catch(function(error) {
+        console.error("Error requesting permission:", error);
+      });
+    }
+  } else {
+    alert("Your browser doesn't support notifications.");
+  }
+</script>
+{% endif %}
+
+          
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
     <!-- Main Content Block -->
     {% block content %} {% endblock %}
