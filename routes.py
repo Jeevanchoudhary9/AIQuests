@@ -705,16 +705,19 @@ def questions():
 @role_required(['admin', 'moderator'])
 def answer_delete(answerid):
     answer = Answers.query.get(answerid)
-
-    if answer.answer == Answers.query.filter_by(questionid=answer.questionid,marked_as_official=True).first().answer:
-        if len(Answers.query.filter_by(questionid=answer.questionid,marked_as_official=True).all())>1:
-            Questions.query.filter_by(questionid=answer.questionid).first().official_answer = Answers.query.filter(Answers.questionid == answer.questionid,Answers.marked_as_official == True,Answers.answerid != answerid).first().answer
-        else:
-            Questions.query.filter_by(questionid=answer.questionid).first().official_answer = ""
-
+    official_ans=answer.answer
     question_id = answer.questionid
     db.session.delete(answer)
     db.session.commit()
+
+    if Questions.query.filter_by(questionid=question_id).first().official_answer == official_ans:
+        if len(Answers.query.filter_by(questionid=question_id,marked_as_official=True).all())>=1:
+            Questions.query.filter_by(questionid=question_id).first().official_answer = Answers.query.filter_by(questionid=question_id,marked_as_official=True).order_by(Answers.date.desc()).first().answer
+        else:
+            Questions.query.filter_by(questionid=question_id).first().official_answer = ""
+
+    db.session.commit()
+
     flash(['Answer deleted successfully','success'])
     return redirect(url_for('questions_details', question_id=question_id))
 

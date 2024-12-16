@@ -234,18 +234,21 @@
   
   <div class="mt-4 text-sm text-gray-500">
     <div class="flex items-center justify-between">
-      <!-- Delete Button -->
-      <a href="{{url_for('answer_delete', answerid=answer.answerid) }}" 
-   class="text-white bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
-   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline-block">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M6 10.5v9.75A2.25 2.25 0 008.25 22.5h7.5A2.25 2.25 0 0018 20.25V10.5M19.5 6h-15m4.5 0v-.75A1.5 1.5 0 0110.5 3h3a1.5 1.5 0 011.5 1.5V6m-9 0h9" />
-   </svg>
-</a>
+      {% if role=="moderator" or role=="admin" %}
+        <!-- Delete Button -->
+        <a href="{{url_for('answer_delete', answerid=answer.answerid) }}" 
+          class="text-white bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline-block">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 10.5v9.75A2.25 2.25 0 008.25 22.5h7.5A2.25 2.25 0 0018 20.25V10.5M19.5 6h-15m4.5 0v-.75A1.5 1.5 0 0110.5 3h3a1.5 1.5 0 011.5 1.5V6m-9 0h9" />
+          </svg>
+        </a>
+      {% endif %}
+      <spacer></spacer>
 
   
       <!-- Inform Section -->
       {% if answer.username.username == "AI@aiquest.com" %}
-        <span>🤖 Answered by AI</span>
+        <span>🤖 Answered by AI
         {% if role=="moderator" %}
           {% if answer.marked_as_official %}
             <a href="{{url_for('unmark_as_official',answerid=answer.answerid)}}" 
@@ -259,6 +262,7 @@
             </a>
           {% endif %}
         {% endif %}
+      </span>
       {% else %}
         <span>
           {% if answer.marked_as_official %} ✅ {% endif %} answered
