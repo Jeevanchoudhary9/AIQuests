@@ -240,6 +240,8 @@ def organization_dashboard():
         {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
     ]
 
+    pdf_files = Docs.query.filter_by(orgid=session['org_id']).all()
+    pdf_files_serialized = [doc.serializer() for doc in pdf_files]
     all_invites = []
     # top 5 user having role user and moderator
     top_5_user = Invites.query.filter(Invites.registered == True).order_by(Invites.date.desc()).limit(5).all()
@@ -257,10 +259,16 @@ def organization_dashboard():
         total_answers = total_answers+Answers.query.filter_by(userid=user.userid).count()
     content={'total_users':total_users,'total_questions':total_questions,'total_answers':total_answers}
 
-    return render_template('OrganizationDashboard.html',
-                           data = generate_demo_data(),
-                           questions=questions,invites=all_invites,
-                           nav="Organization Dashboard",content=content)
+    return render_template(
+                            'OrganizationDashboard.html',
+                            data=generate_demo_data(),
+                            questions=questions,
+                            invites=all_invites,
+                            nav="Organization Dashboard",
+                            content=content,
+                            pdf_files=pdf_files_serialized
+                        )
+
 
 
 # NOTE: 

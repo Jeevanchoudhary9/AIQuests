@@ -298,55 +298,57 @@
     </div>
   </div>
 
-<div class="flex flex-col h-screen p-12 bg-white">
-  <!-- Drop Area Container -->
-  <div class="flex flex-col justify-start items-center h-1/2 bg-white rounded-lg shadow-lg relative" id="drop-area">
-    <!-- Header Section -->
-    <div id="header" class="flex justify-between items-center w-full px-6 py-4 bg-gray-100 text-gray-900 font-bold rounded-t-lg border-b border-gray-300">
-      <span id="header-title" class="text-lg">Upload Files</span>
-      <div>
-        <form id="upload-form" class="flex flex-col items-center w-full h-full justify-center" method="POST" action="/upload" enctype="multipart/form-data">
-          <input id="file-input" type="file" name="file" class="hidden" accept=".pdf" />
-          <div id="file-info" class="hidden text-gray-700 text-center">
-            <button 
-              type="submit" 
-              id="submit-button" 
-              class="mt-4 px-6 py-2 bg-gray-100 text-gray-900 font-medium rounded-lg hover:bg-gray-200 transition hidden"
-            >
-              Submit
-            </button>
-          </div>
-        </form>
-      </div>
-      <button 
-        id="trigger-button" 
-        class="px-4 py-2 bg-gray-100 text-gray-900 font-semibold rounded-lg shadow hover:bg-gray-200 transition"
-        onclick="triggerFileInput()"
-      >
-        Upload
-      </button>
-    </div>
-
-    <!-- PDF List Section -->
-    <div id="pdf-list" class="grid grid-cols-3 gap-6 p-6 overflow-y-auto w-full h-full bg-white rounded-b-lg">
-      {% if pdf_files|length > 0 %}
-        {% for pdf in pdf_files %}
-        <div class="flex flex-col items-center bg-gray-50 rounded-lg shadow p-4 hover:shadow-md transition">
-          <div class="w-full h-24 bg-gray-100 flex justify-center items-center text-gray-500 rounded-md">
-            <span class="font-medium text-lg">PDF</span>
-          </div>
-          <span class="truncate mt-3 text-gray-800 text-sm font-medium">{{ pdf.filename }}</span>
-          <a href="{{ pdf.url }}" target="_blank" class="text-blue-600 hover:underline mt-2 text-sm">View</a>
+  <div class="flex flex-col h-screen p-12 bg-white">
+    <!-- Drop Area Container -->
+    <div class="flex flex-col justify-start items-center h-1/2 bg-white rounded-lg shadow-lg relative" id="drop-area">
+      <!-- Header Section -->
+      <div id="header" class="flex justify-between items-center w-full px-6 py-4 bg-gray-100 text-gray-900 font-bold rounded-t-lg border-b border-gray-300">
+        <span id="header-title" class="text-lg">Upload Files</span>
+        <div>
+          <form id="upload-form" class="flex flex-col items-center w-full h-full justify-center" method="POST" action="/upload" enctype="multipart/form-data">
+            <input id="file-input" type="file" name="file" class="hidden" accept=".pdf" />
+            <div id="file-info" class="hidden text-gray-700 text-center">
+              <span class="font-semibold">Selected file: </span>
+              <span id="file-name" class="text-gray-900"></span>
+              <button 
+                type="submit" 
+                id="submit-button" 
+                class="mt-4 px-6 py-2 bg-gray-100 text-gray-900 font-medium rounded-lg hover:bg-gray-200 transition hidden"
+              >
+                Submit
+              </button>
+            </div>
+          </form>
         </div>
-        {% endfor %}
-      {% else %}
-      <div class="flex items-center justify-center w-full h-full">
-        <p class="text-gray-500 font-medium text-lg text-center">No files are available.</p>
+        <button 
+          id="trigger-button" 
+          class="px-4 py-2 bg-gray-100 text-gray-900 font-semibold rounded-lg shadow hover:bg-gray-200 transition"
+          onclick="triggerFileInput()"
+        >
+          Upload
+        </button>
       </div>
-      {% endif %}
+
+      <!-- PDF List Section -->
+      <div id="pdf-list" class="grid grid-cols-3 gap-6 p-6 overflow-y-auto w-full h-full bg-white rounded-b-lg">
+        {% if pdf_files|length > 0 %}
+          {% for pdf in pdf_files %}
+          <div class="flex flex-col items-center bg-gray-50 rounded-lg shadow p-4 hover:shadow-md transition">
+            <div class="w-full h-24 bg-gray-100 flex justify-center items-center text-gray-500 rounded-md">
+              <span class="font-medium text-lg">PDF</span>
+            </div>
+            <span class="truncate mt-3 text-gray-800 text-sm font-medium">{{ pdf.docname }}</span>
+            <a href="{{ pdf.docpath }}" target="_blank" class="text-blue-600 hover:underline mt-2 text-sm">View</a>
+          </div>
+          {% endfor %}
+        {% else %}
+        <div class="flex items-center justify-center w-full h-full">
+          <p class="text-gray-500 font-medium text-lg text-center">No files are available.</p>
+        </div>
+        {% endif %}
+      </div>
     </div>
   </div>
-</div>
 
 </div>
 </div>

@@ -364,8 +364,7 @@ class Docs(db.Model):
             'docname': self.docname,
             'docdesc': self.docdesc,
             'docpath': self.docpath,
-            'orgid': self.orgid,
-            'uploaded_by': self.uploaded_by
+            'orgid': self.orgid
         }
         
 with app.app_context():
