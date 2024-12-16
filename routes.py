@@ -274,6 +274,30 @@ def moderator_dashboard():
 
     return render_template('ModeratorDashboard.html', questions=questions,nav="Moderator Dashboard")
 
+@app.route('/mark_as_official/<int:answerid>', methods=['get'])
+@role_required('moderator')
+def mark_as_official(answerid):
+    answer = Answers.query.get(answerid)
+    answer.marked_as_official = True
+    Questions.query.filter_by(questionid=answer.questionid).first().official_answer = answer.answer
+
+    db.session.commit()
+    flash(['Answer marked as official','success'])
+    return redirect(url_for('questions_details', question_id=answer.questionid))
+
+@app.route('/unmark_as_official/<int:answerid>', methods=['get'])
+@role_required('moderator')
+def unmark_as_official(answerid):
+    answer = Answers.query.get(answerid)
+    answer.marked_as_official = False
+    if len(Answers.query.filter_by(questionid=answer.questionid,marked_as_official=True).all())>=1:
+        Questions.query.filter_by(questionid=answer.questionid).first().official_answer = Answers.query.filter_by(questionid=answer.questionid,marked_as_official=True).first().answer
+    else:
+        Questions.query.filter_by(questionid=answer.questionid).first().official_answer = ""
+
+    db.session.commit()
+    flash(['Answer unmarked as official','success'])
+    return redirect(url_for('questions_details', question_id=answer.questionid))
 
 @app.route('/dashboard/user')
 @role_required("user")
@@ -722,7 +746,7 @@ def questions_details(question_id):
 
 
         flash(['Answer added successfully','success'])
-        return redirect(url_for('questions'))
+        return redirect(url_for('questions_details', question_id=question_id))
             
 
     else: # Get all questions
@@ -737,7 +761,8 @@ def questions_details(question_id):
         relative_time = humanize.naturaltime(now - timestamp)
         user_question=User.query.filter_by(userid=questions.userid).first()
 
-        answer_all=Answers.query.filter_by(questionid=question_id).all()
+        answer_all = Answers.query.filter_by(questionid=question_id).order_by(Answers.date.desc()).all()
+
         answers_list=[]
         for answer in answer_all:
             answers_list.append(answer.serializer())
@@ -833,9 +858,9 @@ def ask_question():
         thread.start()
 
         flash(['Your question is being posted in the background!', 'success'])
-        return redirect(url_for('ask_question'))  # Redirect to the same page or another page
+        return redirect(url_for('questions'))  # Redirect to the same page or another page
     
-    return redirect(url_for('questions'))
+    return render_template('AskQuestion.html',nav="Ask Question")
 
 
 

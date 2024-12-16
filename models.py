@@ -113,7 +113,9 @@ class Answers(db.Model):
                     parts_lines = part.splitlines()
                     if parts_lines:
                         # Skip the first line and don't add it to the formatted_answer
+                        print(parts_lines)
                         class_name = parts_lines[0].split()[0]
+                        
                         part = '\n'.join(parts_lines[1:])  # Remove the first line of the part
                         
                     # Start a new section for the code block
