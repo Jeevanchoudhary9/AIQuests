@@ -142,7 +142,7 @@ def is_abusive(content, threshold=0.5, max_token_length=512):
 
     return abusive, all_predictions
 
-def role_required(role=None):
+def role_required(roles=None):
     def decorator(func):
         @wraps(func)
         def inner(*args, **kwargs):
@@ -150,24 +150,31 @@ def role_required(role=None):
             user_id = session.get('user_id')
             org_id = session.get('org_id')
 
+            # Ensure roles is iterable
+            roles_to_check = roles if isinstance(roles, (list, tuple)) else [roles]
+
             # Role-specific checks
-            if role == "organization" and org_id:
+            if "organization" in roles_to_check and org_id:
                 organization = Organizations.query.filter_by(orgid=org_id).first()
                 if organization:
                     return func(*args, **kwargs)
-            elif role == "moderator" and user_id:
+
+            if "moderator" in roles_to_check and user_id:
                 moderator = User.query.filter_by(userid=user_id).first()
                 if moderator and moderator.role == "moderator":
                     return func(*args, **kwargs)
-            elif role == "user" and user_id:
+
+            if "user" in roles_to_check and user_id:
                 user = User.query.filter_by(userid=user_id).first()
                 if user:
                     return func(*args, **kwargs)
 
+            # If no matching role, deny access
             flash("You do not have permission to access this page.")
             return redirect(url_for('login'))
         return inner
     return decorator
+
 
 
 
@@ -265,7 +272,7 @@ def moderator_dashboard():
         {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
     ]
 
-    return render_template('ModeratorDashboard.html', questions=questions)
+    return render_template('ModeratorDashboard.html', questions=questions,nav="Moderator Dashboard")
 
 
 @app.route('/dashboard/user')
@@ -671,11 +678,15 @@ def questions():
 
 
 @app.route('/questions_details/<int:question_id>', methods=['GET', 'POST'])
+@role_required(['user', 'moderator'])
 def questions_details(question_id):
 
     if request.method=='POST':
-        answer=request.form.get('answer_body')
-        isAnsOfficial = True if request.form.get('official_status') == "yes" else False
+        answer=request.form.get('answer')
+        if User.query.get(session['user_id']).role=='moderator':
+            isAnsOfficial = True if request.form.get('official_status') == "yes" else False
+        else:
+            isAnsOfficial = False
         
         if answer is None:
             flash('Please fill the required fields')
@@ -693,10 +704,10 @@ def questions_details(question_id):
 
 
             # Generate BERT embedding for the question text
-            inputs = tokenizer(question_text, return_tensors='pt', truncation=True, padding=True)
-            with torch.no_grad():
-                outputs = model(**inputs)
-                embedding = outputs.last_hidden_state.mean(dim=1).squeeze().tolist()
+            # inputs = tokenizer(question_text, return_tensors='pt', truncation=True, padding=True)
+            # with torch.no_grad():
+            #     outputs = model(**inputs)
+            #     embedding = outputs.last_hidden_state.mean(dim=1).squeeze().tolist()
 
             # # Create the official answer entry
             # official_entry = OfficialAnswer(
@@ -730,7 +741,7 @@ def questions_details(question_id):
         for answer in answer_all:
             answers_list.append(answer.serializer())
 
-        return render_template('QuestionDetails.html',question=questions.serializer(),relative_time=relative_time,user_question=user_question,answers=answers_list,nav="Question {}".format(question_id))
+        return render_template('QuestionDetails.html',question=questions.serializer(),relative_time=relative_time,user_question=user_question,answers=answers_list,nav="Question {}".format(question_id),role=User.query.filter_by(userid=session['user_id']).first().role)
 
 
 def ask_question_function(question_id, org_id, title, body, tags):
@@ -826,52 +837,6 @@ def ask_question():
     return render_template('AskQuestion.html',nav="Ask Question")
 
 
-@app.route('/<int:answer_id>/vote', methods=["POST"])
-@role_required('user')
-def vote(answer_id):
-    print('vote')
-    # if request.method != "POST":
-    #     return jsonify({"error": "Invalid request"}), 400
-
-    # # Extract form data
-    # vote_type = int(request.form.get("vote"))  # 1 for upvote, -1 for downvote
-    # user_id = int(request.form.get("user_id"))  # TODO: Get it from Session ID
-
-    # # Fetch existing vote if it exists
-    # vote_entry = Votes.query.filter_by(answerid=answer_id, userid=user_id).first()
-
-    # if vote_entry:
-    #     # Toggle the vote state or remove the vote
-    #     if vote_entry.vote == vote_type:
-    #         vote_entry.vote = 0  # Remove vote if it's the same as current
-    #     else:
-    #         vote_entry.vote = vote_type  # Update to the new vote type
-
-    #     db.session.commit()
-    #     return jsonify({"message": "Vote updated successfully", "vote": vote_entry.vote})
-
-    # # Check if the answer exists
-    # answer = Answers.query.filter_by(answerid=answer_id).first()
-    # if not answer:
-    #     return jsonify({"error": "Answer not found"}), 404
-
-    # # Create a new vote entry
-    # new_vote = Votes(
-    #     vote=vote_type,
-    #     questionid=answer.questionid,
-    #     answerid=answer_id,
-    #     userid=user_id,
-    #     date=datetime.datetime.now()
-    # )
-    # db.session.add(new_vote)
-    # db.session.commit()
-
-    # return jsonify({
-    #     "message": "Vote created successfully",
-    #     "vote": new_vote.vote,
-    #     "questionid": new_vote.questionid
-    # })
-
 
 @app.route('/myquestions',methods=['GET'])
 @role_required('user')
@@ -932,64 +897,64 @@ def plus_one(question_id):
 
 
 
-@app.route('/answers/<int:question_id>', methods=['GET', 'POST', 'DELETE', 'PUT'])
-@role_required('user')
-def answers_route(question_id):
+# @app.route('/answers/<int:question_id>', methods=['GET', 'POST', 'DELETE', 'PUT'])
+# @role_required('user')
+# def answers_route(question_id):
     
-        if request.method=='POST':
-            answer=request.form.get('answer')
-            official_answer=request.form.get('official_status')
-            if question_id is None or answer is None:
-                flash('Please fill the required fields')
-                return redirect(url_for('questions'))
-            is_toxic, details = is_abusive(answer)
-            if is_toxic:
-                flash('The answer content is toxic/abusive cannot be posted. We apologize for the inconvenience.', 'error')
-                return redirect(url_for('questions'))
-            if official_answer == 'no':
-                answer=Answers(answer=answer,questionid=question_id, userid=session['user_id'],
-                            upvotes=0, downvotes=0, date=datetime.datetime.now())
-                db.session.add(answer)
-                db.session.commit()
-                flash(['Answer added successfully','success'])
-                return redirect(url_for('questions'))
-            else:
-                question = Questions.query.filter_by(questionid=question_id).first()
-                question.official_answer = answer
-                db.session.commit()
-                flash(['Official answer added successfully','success'])
-                return redirect(url_for('questions'))
+#         if request.method=='POST':
+#             answer=request.form.get('answer')
+#             official_answer=request.form.get('official_status')
+#             if question_id is None or answer is None:
+#                 flash('Please fill the required fields')
+#                 return redirect(url_for('questions'))
+#             is_toxic, details = is_abusive(answer)
+#             if is_toxic:
+#                 flash('The answer content is toxic/abusive cannot be posted. We apologize for the inconvenience.', 'error')
+#                 return redirect(url_for('questions'))
+#             if official_answer == 'no':
+#                 answer=Answers(answer=answer,questionid=question_id, userid=session['user_id'],
+#                             upvotes=0, downvotes=0, date=datetime.datetime.now())
+#                 db.session.add(answer)
+#                 db.session.commit()
+#                 flash(['Answer added successfully','success'])
+#                 return redirect(url_for('questions'))
+#             else:
+#                 question = Questions.query.filter_by(questionid=question_id).first()
+#                 question.official_answer = answer
+#                 db.session.commit()
+#                 flash(['Official answer added successfully','success'])
+#                 return redirect(url_for('questions'))
         
-        # elif request.method=='DELETE': # Delete the answer
-        #     answer_id=request.form.get('answer_id')
-        #     if answer_id is None:
-        #         flash('Please fill the required fields')
-        #         return redirect(url_for('questions'))
-        #     answer=answers.query.filter_by(answerid=answer_id).first()
-        #     db.session.delete(answer)
-        #     db.session.commit()
-        #     flash(['Answer deleted successfully','success'])
-        #     return redirect(url_for('questions'))
+#         # elif request.method=='DELETE': # Delete the answer
+#         #     answer_id=request.form.get('answer_id')
+#         #     if answer_id is None:
+#         #         flash('Please fill the required fields')
+#         #         return redirect(url_for('questions'))
+#         #     answer=answers.query.filter_by(answerid=answer_id).first()
+#         #     db.session.delete(answer)
+#         #     db.session.commit()
+#         #     flash(['Answer deleted successfully','success'])
+#         #     return redirect(url_for('questions'))
         
-        elif request.method=='PUT': # Vote the answer
-            answer_id=request.form.get('answer_id')
-            vote = request.form.get('vote') # +1 for upvote and -1 for downvote, +10 for official answer
-            answer=Answers.query.filter_by(answerid=answer_id).first()
+#         elif request.method=='PUT': # Vote the answer
+#             answer_id=request.form.get('answer_id')
+#             vote = request.form.get('vote') # +1 for upvote and -1 for downvote, +10 for official answer
+#             answer=Answers.query.filter_by(answerid=answer_id).first()
 
-            if vote == 1:
-                answer.upvotes+=1
+#             if vote == 1:
+#                 answer.upvotes+=1
 
-            elif vote == 10:
-                answer.marked_as_official=True
-                question = questions.query.filter_by(questionid=answer.questionid).first()
-                question.official_answer = answer.answer
+#             elif vote == 10:
+#                 answer.marked_as_official=True
+#                 question = questions.query.filter_by(questionid=answer.questionid).first()
+#                 question.official_answer = answer.answer
 
-            elif vote == -1:
-                answer.downvotes+=1
+#             elif vote == -1:
+#                 answer.downvotes+=1
 
-            db.session.commit()
-            flash(['Voted successfully','success'])
-            return redirect(url_for('questions'))
+#             db.session.commit()
+#             flash(['Voted successfully','success'])
+#             return redirect(url_for('questions'))
 
 
 @app.route('/upvote/<int:question_id>', methods=['POST'])
@@ -1027,21 +992,29 @@ def upvote_answer(answer_id):
     
     vote = Votes.query.filter_by(answerid=answer_id, userid=session.get('user_id')).first()
     if vote:
-        db.session.delete(vote)
-        Answers.query.filter_by(answerid=answer_id).first().upvotes -= 1
+        if vote.vote == "1":
+            print('upvote')
+            return jsonify({"success": False, "message": "You have already voted"}), 403
+        else:
+
+            vote.vote = 1
+            Answers.query.filter_by(answerid=answer_id).first().upvotes += 1
+            Answers.query.filter_by(answerid=answer_id).first().downvotes -= 1
+            db.session.commit()
+            upvote=Answers.query.filter_by(answerid=answer_id).first().upvotes
+            downvote=Answers.query.filter_by(answerid=answer_id).first().downvotes
+            return jsonify({"success": True, "upvote": upvote, "downvote": downvote})
+    else :
+        print("belwo else")
+        question_id=Answers.query.filter_by(answerid=answer_id).first().questionid
+        vote = Votes(answerid=answer_id, userid=session.get('user_id'), date=datetime.datetime.now(),questionid=question_id, vote=1)
+        Answers.query.filter_by(answerid=answer_id).first().upvotes += 1
+        db.session.add(vote)
         db.session.commit()
-        new_count = Votes.query.filter_by(answerid=answer_id).count()
-        return jsonify({"success": True, "new_count": new_count, "status": False})
-    
-    question_id=Answers.query.filter_by(answerid=answer_id).first().questionid
-    vote = Votes(answerid=answer_id, userid=session.get('user_id'), date=datetime.datetime.now(),questionid=question_id, vote=1)
-    Answers.query.filter_by(answerid=answer_id).first().upvotes += 1
-    db.session.add(vote)
-    db.session.commit()
-    new_count = Votes.query.filter_by(answerid=answer_id).count()
+        upvote=Answers.query.filter_by(answerid=answer_id).first().upvotes
+        downvote=Answers.query.filter_by(answerid=answer_id).first().downvotes
 
-
-    return jsonify({"success": True, "new_count": new_count})
+        return jsonify({"success": True, "upvote": upvote, "downvote": downvote})
 
 
 
@@ -1051,23 +1024,39 @@ def downvoteans(answer_id):
     if not session.get('user_id'):
         return jsonify({"success": False, "message": "Unauthorized"}), 403
     
+    
     vote = Votes.query.filter_by(answerid=answer_id, userid=session.get('user_id')).first()
     if vote:
-        db.session.delete(vote)
-        Answers.query.filter_by(answerid=answer_id).first().downvotes -= 1
+        if vote.vote == "-1":
+            return jsonify({"success": False, "message": "You have already voted"}), 403
+        else:
+            vote.vote = -1
+            Answers.query.filter_by(answerid=answer_id).first().upvotes -= 1
+            Answers.query.filter_by(answerid=answer_id).first().downvotes += 1
+            db.session.commit()
+            upvote=Answers.query.filter_by(answerid=answer_id).first().upvotes
+            downvote=Answers.query.filter_by(answerid=answer_id).first().downvotes
+            return jsonify({"success": True, "upvote": upvote, "downvote": downvote})
+    else :
+        question_id=Answers.query.filter_by(answerid=answer_id).first().questionid
+        vote = Votes(answerid=answer_id, userid=session.get('user_id'), date=datetime.datetime.now(),questionid=question_id, vote=-1)
+        Answers.query.filter_by(answerid=answer_id).first().downvotes += 1
+        db.session.add(vote)
         db.session.commit()
-        new_count = Votes.query.filter_by(answerid=answer_id).count()
-        return jsonify({"success": True, "new_count": new_count, "status": False})
-    
-    question_id=Answers.query.filter_by(answerid=answer_id).first().questionid
-    vote = Votes(answerid=answer_id, userid=session.get('user_id'), date=datetime.datetime.now(),questionid=question_id, vote=-1)
-    Answers.query.filter_by(answerid=answer_id).first().downvotes += 1
-    db.session.add(vote)
-    db.session.commit()
-    new_count = Votes.query.filter_by(answerid=answer_id).count()
+        upvote=Answers.query.filter_by(answerid=answer_id).first().upvotes
+        downvote=Answers.query.filter_by(answerid=answer_id).first().downvotes
 
-    print('downvote')
-    return jsonify({"message": "Vote updated successfully", "new_count": "50"})
+        return jsonify({"success": True, "upvote": upvote, "downvote": downvote})
+    
+    # question_id=Answers.query.filter_by(answerid=answer_id).first().questionid
+    # vote = Votes(answerid=answer_id, userid=session.get('user_id'), date=datetime.datetime.now(),questionid=question_id, vote=-1)
+    # Answers.query.filter_by(answerid=answer_id).first().downvotes += 1
+    # db.session.add(vote)
+    # db.session.commit()
+    # new_count = Votes.query.filter_by(answerid=answer_id).count()
+
+    # print('downvote')
+    # return jsonify({"message": "Vote updated successfully", "new_count": "50"})
 
 
 @app.route('/upload', methods=['POST'])
