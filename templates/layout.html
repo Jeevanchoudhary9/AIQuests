@@ -83,50 +83,6 @@
               </button>
             </div>
           {% endif %}
-          
-          <!-- Check if message[2] is "pushnot" -->
-          <!-- Check if message[2] is "pushnot" -->
-          <!-- <button id="notifyBtn">Enable Notifications</button> -->
-          {% if message[2] %}
-          <script>
-          console.log("{{ message[2] }}");
-          
-            // Check if the Notification API is supported
-            if ("Notification" in window) {
-              // Check the current notification permission
-              if (Notification.permission === "granted") {
-                // If permission is already granted, show the notification
-                new Notification("{{ message[2] }}", {
-                  body: "{{ message[3] }}", // Use message[3] as the notification body
-                  icon: "https://i.ibb.co/VwJH5Tz/Screenshot-2024-12-16-at-8-54-55-PM.png" // Optional icon
-                });
-              } else if (Notification.permission === "denied") {
-                // Notify the user about denied permissions
-                console.warn("Notification permission was previously denied.");
-              } else {
-                // Request permission if it hasn't been granted or denied yet
-                Notification.requestPermission().then(function (permission) {
-                  if (permission === "granted") {
-                    // Display the notification
-                    new Notification("{{ message[2] }}", {
-                      body: "{{ message[3] }}", // Use message[3] as the notification body
-                      icon: "https://i.ibb.co/VwJH5Tz/Screenshot-2024-12-16-at-8-54-55-PM.png" // Optional icon
-                    });
-                  } else {
-                    console.warn("Notification permission denied.");
-                  }
-                }).catch(function (error) {
-                  console.error("Error requesting permission:", error);
-                });
-              }
-            } else {
-              console.warn("Your browser doesn't support notifications.");
-            }
-          </script>
-          {% endif %}
-          
-
-          
         {% endfor %}
       {% endif %}
     {% endwith %}
@@ -144,5 +100,64 @@
       });
     </script>
     {% endblock %}
+
+    <!-- Check Notification and Request Permission -->
+    <script>
+      // General function to check notifications from backend
+      function checkNotification() {
+        //console.log("Checking notifications...");
+        fetch('/check_notifications')  // Endpoint that fetches all pending notifications
+          .then(response => response.json())
+          .then(data => {
+            if (data.notifications && data.notifications.length > 0) {
+              data.notifications.forEach(notification => {
+                showNotification(notification.title, notification.body);  // Display each notification
+                if (notification.redirect_url) {
+                  window.location.href = notification.redirect_url;  // Redirect if needed
+                }
+              });
+              //console.log("Notifications checked successfully.", data.notifications);
+            } else {
+              //console.log("No new notifications.", data.notifications);
+              // Retry after 30 seconds if no new notifications
+              setTimeout(checkNotification, 60000);  // Retry after 30 seconds
+            }
+          })
+          .catch(error => console.error("Error checking notifications:", error));
+      }
+    
+      // On page load, start checking for notifications
+      window.onload = function() {
+        checkNotification();  // Start checking for notifications
+      };
+    
+      // Check every 30 seconds, even if the page is reloaded
+      setInterval(checkNotification, 30000);  // Check every 30 seconds
+      
+      // Check if the Notification API is supported
+      if ("Notification" in window) {
+        // Function to display the notification
+        function showNotification(messageTitle, messageBody) {
+          new Notification(messageTitle, {
+            body: messageBody,  // Use messageBody as the notification content
+            icon: "https://i.ibb.co/VwJH5Tz/Screenshot-2024-12-16-at-8-54-55-PM.png" // Optional icon
+          });
+        }
+    
+        // Request Notification Permission
+        if (Notification.permission === "default") {
+          Notification.requestPermission().then(function(permission) {
+            if (permission === "granted") {
+              console.log("Notification permission granted.");
+            }
+          }).catch(function(error) {
+            console.error("Error requesting notification permission:", error);
+          });
+        }
+      } else {
+        console.warn("Your browser doesn't support notifications.");
+      }
+    </script>
+    
   </body>
 </html>

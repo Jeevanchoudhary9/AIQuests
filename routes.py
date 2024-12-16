@@ -246,6 +246,31 @@ def trigger_notification(redirect_url, message_title, message_body):
         # Handle invalid redirect URL gracefully
         return f"Error: {e}", 400
 
+# @app.route('/check_notification/<int:question_id>', methods=['GET'])
+# def check_notification(question_id):
+#     print("Checking notification for question ID:", question_id)
+#     if question_id in notification_data:
+#         # Return the notification data and remove it after sending
+#         return jsonify(notification_data.pop(question_id))
+#     return jsonify({"status": "pending"})
+
+# Simulating notifications
+notifications = [
+    # {"title": "New Notification", "body": "You have a new message.", "redirect_url": "/"},
+    # {"title": "Update Available", "body": "A new update is available for your app."}
+]
+
+@app.route('/check_notifications')
+def check_notifications():
+    if notifications:
+        # Pop the first notification from the list
+        notification = notifications.pop(0)
+        return jsonify({"notifications": [notification]})
+    else:
+        # If there are no notifications, return an empty list
+        return jsonify({"notifications": []})
+
+
 # NOTE: Organization dashboard
 @app.route('/dashboard/organization')
 @role_required('organization')
@@ -885,6 +910,15 @@ def ask_question_function(question_id, org_id, title, body, tags):
         
     finally:
         print("Thread ended")
+        # Save the notification status globally
+        # Add the notification to the list
+        notification = {
+            "title": "AI Response",
+            "body": "Your question has been answered by AI.",
+            "redirect_url": '/questions'  # Optional field
+        }
+
+        notifications.append(notification)  
         # Instead of flash, consider logging or saving the notification elsewhere
         # Trigger a background notification using something else (e.g., a custom notification model)
         # return redirect(url_for('trigger_notification', redirect_url='questions', message_title='Question Posted', message_body='Your question has been posted successfully!'))
