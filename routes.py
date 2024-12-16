@@ -549,6 +549,7 @@ def register(code=None, email=None):
         confirmpassword=request.form.get('confirmpassword')
         username=request.form.get('username')
         invitecode=request.form.get('invitecode')
+        role=Invites.query.filter_by(code=invitecode).first().role
 
         if username is None or password is None or email is None or  firstname is None or lastname is None or invitecode is None:
             flash('Please fill the required fields')
@@ -578,7 +579,7 @@ def register(code=None, email=None):
         orgid=invite.orgid
         
         user=User(firstname=firstname,lastname=lastname,username=username,
-                  email=email,passhash=generate_password_hash(password),organization=orgid)
+                  email=email,passhash=generate_password_hash(password),organization=orgid,role=role)
         invite.registered = True
         db.session.add(user)
         db.session.commit()
@@ -834,7 +835,7 @@ def ask_question():
         flash(['Your question is being posted in the background!', 'success'])
         return redirect(url_for('ask_question'))  # Redirect to the same page or another page
     
-    return render_template('AskQuestion.html',nav="Ask Question")
+    return redirect(url_for('questions'))
 
 
 
