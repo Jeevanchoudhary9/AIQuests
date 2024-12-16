@@ -39,27 +39,21 @@
 
     <div class="grid md:grid-cols-3 gap-8 mb-12">
       <div class="bg-white p-6 rounded-lg shadow-md">
-        <svg class="h-12 w-12 text-orange-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-          <path d="M17 2a1 1 0 0 1 1 1v14.172a1 1 0 0 1-.293.707l-3 3a1 1 0 0 1-1.707-.707V12a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v8.172l3-3a1 1 0 0 1 .707-1.707V3a1 1 0 0 1-1-1h-7z"></path>
-        </svg>
+          <img src="{{ url_for('static', filename='img/question-mark.png') }}" alt="question Icon" class="h-12 w-12 text-blue-600"/>  
         <h3 class="text-xl font-semibold mb-2">Trending Questions</h3>
         <p class="text-gray-600">
           Explore the most discussed topics in the developer community
         </p>
       </div>
       <div class="bg-white p-6 rounded-lg shadow-md">
-        <svg class="h-12 w-12 text-blue-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-          <path d="M17 2a1 1 0 0 1 1 1v14.172a1 1 0 0 1-.293.707l-3 3a1 1 0 0 1-1.707-.707V12a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v8.172l3-3a1 1 0 0 1 .707-1.707V3a1 1 0 0 1-1-1h-7z"></path>
-        </svg>
+        <img src="{{ url_for('static', filename='img/answer.png') }}" alt="answer Icon" class="h-12 w-12 text-blue-600"/>  
         <h3 class="text-xl font-semibold mb-2">Expert Answers</h3>
         <p class="text-gray-600">
           Get solutions from experienced developers worldwide
         </p>
       </div>
       <div class="bg-white p-6 rounded-lg shadow-md">
-        <svg class="h-12 w-12 text-green-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-          <path d="M12 6c3.3 0 6 2.7 6 6s-2.7 6-6 6-6-2.7-6-6 2.7-6 6-6zm0-4c-5.5 0-10 4.5-10 10s4.5 10 10 10 10-4.5 10-10-4.5-10-10-10zm-1 13h2v2h-2zm0-8h2v6h-2z"></path>
-        </svg>
+        <img src="{{ url_for('static', filename='img/ai.png') }}" alt="answer Icon" class="h-12 w-12 text-blue-600"/>  
         <h3 class="text-xl font-semibold mb-2">AI Assistant</h3>
         <p class="text-gray-600">
           Instant AI-powered responses for quick problem-solving
