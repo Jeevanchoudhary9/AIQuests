@@ -5,7 +5,7 @@ from app import app
 from functools import wraps
 from models import db, User, Questions, Plus_ones, Answers,Votes,Organizations,Moderators,Labels,Invites,Keywords, Docs
 import random
-import ollama
+from langchain_community.llms.ollama import Ollama
 import re
 import humanize
 from transformers import BertTokenizer, BertModel
@@ -22,6 +22,9 @@ from email.mime.application import MIMEApplication
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from langchain_community.llms.ollama import Ollama
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 import smtplib
 import threading
 from flask import jsonify
@@ -34,16 +37,18 @@ from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 from transformers import pipeline
 
+
+
 ALLOWED_EXTENSIONS = {'pdf'}
 
 # Helper function to check file extension
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-model = KeyBERT('distilbert-base-nli-mean-tokens')
+keybertmodel = KeyBERT('distilbert-base-nli-mean-tokens')
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-model = BertModel.from_pretrained('bert-base-uncased')
+# model = BertModel.from_pretrained('bert-base-uncased')
 
 
 def generate_demo_data():
@@ -226,9 +231,20 @@ def send_email(to_email, subject, html_content,attachment=None):
 # NOTE: This route takes to landing page
 @app.route('/')
 def index():
-    flash(['Welcome to AIQuest','success','Welcome'])
+    flash(['Welcome to AIQuest','success','Welcome','Welcome to AIQuest'])
+    
     return render_template('Landingpage.html',nav="Welcome")
 
+@app.route("/trigger/<string:redirect_url>/<string:message_title>/<string:message_body>")
+def trigger_notification(redirect_url, message_title, message_body):
+    # Flash the message with the provided title and body
+    flash(['Background process completed!', 'success', message_title, message_body])
+    try:
+        # Redirect to the specified route
+        return redirect(url_for(redirect_url))
+    except Exception as e:
+        # Handle invalid redirect URL gracefully
+        return f"Error: {e}", 400
 
 # NOTE: Organization dashboard
 @app.route('/dashboard/organization')
@@ -800,46 +816,78 @@ def questions_details(question_id):
 
 
 def ask_question_function(question_id, org_id, title, body, tags):
-    print("thread running")
-    with app.app_context():
-        prompt = "Answer the given question: " + title + body + "from tag" + " ".join(tags)
-        response = ollama.generate(model='llama3.2', prompt=prompt)
-
-        is_toxic, details = is_abusive(response["response"])
-        if not is_toxic:
-            answer = response["response"]
-
-            # extracted_keywords = [keyword[0] for keyword in model.extract_keywords(answer)] + tags
-
-            new_answer = Answers(
-                answer=answer,
-                questionid = question_id,
-                userid=2,
-                upvotes=0,
-                downvotes=0,
-                marked_as_official=False,
-                date=datetime.datetime.now()
+    print("Thread started")
+    try:
+        # Use app context explicitly
+        with app.app_context():
+            # Generate AI response
+            prompt = ChatPromptTemplate.from_messages(
+                [
+                    ("system", "You are a helpful assistant. Please respond to user queries."),
+                    ("user", f"Answer the Question: {title} {body} from tag {' '.join(tags)}")
+                ]
             )
+            llm = Ollama(model="llama3.2")
+            output_parser = StrOutputParser()
+            chain = prompt | llm | output_parser
 
-            question = Questions.query.filter_by(questionid=question_id).first()
-            question.ai_answer = True
+            # AI response
+            response = chain.invoke({"title": title, "body": body, "tags": ' '.join(tags)})
 
+            # Check if AI response is toxic
+            is_toxic, details = is_abusive(response)
+            if not is_toxic:
+                answer = response
 
-            # for key in extracted_keywords:
-            #     if_keyword_exist = Keywords.query.filter_by(keyword=key.lower()).first()
-            #     if if_keyword_exist:
-            #         if_keyword_exist.count += 1
-            #     else:
-            #         new_keyword = Keywords(
-            #             keyword=lemmatize_text(key.lower()),
-            #             organization=org_id,
-            #             count=1,
-            #         )
-            #         db.session.add(new_keyword)
-            db.session.add(new_answer)
-            db.session.commit()
-        print("thread ending")
+                # Extract keywords
+                extracted_keywords = [keyword[0] for keyword in keybertmodel.extract_keywords(answer)] + tags
 
+                # Save the answer to the database
+                new_answer = Answers(
+                    answer=answer,
+                    questionid=question_id,
+                    userid=2,  # Adjust based on your logic
+                    upvotes=0,
+                    downvotes=0,
+                    marked_as_official=False,
+                    date=datetime.datetime.now(),
+                )
+
+                # Mark question as AI-answered
+                question = Questions.query.filter_by(questionid=question_id).first()
+                if question:
+                    question.ai_answer = True
+
+                # Update or add keywords
+                for key in extracted_keywords:
+                    key_lower = lemmatize_text(key.lower())
+                    keyword_record = Keywords.query.filter_by(keyword=key_lower).first()
+                    if keyword_record:
+                        keyword_record.count += 1
+                    else:
+                        new_keyword = Keywords(
+                            keyword=key_lower,
+                            organization=org_id,
+                            count=1,
+                        )
+                        db.session.add(new_keyword)
+
+                # Commit changes
+                db.session.add(new_answer)
+                db.session.commit()
+
+                print("AI answered the question successfully.")
+            else:
+                print("AI response is toxic:", details)
+
+    except Exception as e:
+        print("Error in ask_question_function:", str(e))
+        
+    finally:
+        print("Thread ended")
+        # Instead of flash, consider logging or saving the notification elsewhere
+        # Trigger a background notification using something else (e.g., a custom notification model)
+        # return redirect(url_for('trigger_notification', redirect_url='questions', message_title='Question Posted', message_body='Your question has been posted successfully!'))
 
 @app.route('/ask_question', methods=["GET", "POST"])
 @role_required('user')
@@ -899,6 +947,7 @@ def myquestions():
     questions=Questions.query.filter_by(userid=session['user_id']).order_by(Questions.date.desc()).all()
     questions=[question.serializer() for question in questions]
     return render_template('my_questions.html',questions=questions,nav="My Questions")
+
 
 @app.route('/questions_delete/<int:question_id>',methods=['GET'])
 @role_required('user')

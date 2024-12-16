@@ -86,42 +86,45 @@
           
           <!-- Check if message[2] is "pushnot" -->
           <!-- Check if message[2] is "pushnot" -->
-{% if message[2] != None %}
-<script>
-  // Check if the Notification API is supported
-  if ("Notification" in window) {
-    // Check the current notification permission
-    if (Notification.permission === "granted") {
-      // If permission is already granted, show the notification
-      new Notification("{{ message[2] }}", {
-        body: "{{ message[0] }}", // Use message[0] as the notification content
-        icon: "https://i.ibb.co/VwJH5Tz/Screenshot-2024-12-16-at-8-54-55-PM.png" // Optionally use a custom icon
-        //https://picsum.photos/200
-      });
-    } else if (Notification.permission === "denied") {
-      // If permission was denied earlier, notify the user
-      alert("You have previously denied notifications. Please enable them in your browser settings to receive notifications.");
-    } else {
-      // Request permission for notifications if it hasn't been granted or denied yet
-      Notification.requestPermission().then(function(permission) {
-        if (permission === "granted") {
-          // Display the notification with the message[0] content
-          new Notification("{{ message[2] }}", {
-            body: "{{ message[0] }}", // Use message[0] as the notification content
-            icon: "https://i.ibb.co/VwJH5Tz/Screenshot-2024-12-16-at-8-54-55-PM.png" // Optionally use a custom icon
-          });
-        } else {
-          alert("Notification permission denied.");
-        }
-      }).catch(function(error) {
-        console.error("Error requesting permission:", error);
-      });
-    }
-  } else {
-    alert("Your browser doesn't support notifications.");
-  }
-</script>
-{% endif %}
+          <!-- <button id="notifyBtn">Enable Notifications</button> -->
+          {% if message[2] %}
+          <script>
+          console.log("{{ message[2] }}");
+          
+            // Check if the Notification API is supported
+            if ("Notification" in window) {
+              // Check the current notification permission
+              if (Notification.permission === "granted") {
+                // If permission is already granted, show the notification
+                new Notification("{{ message[2] }}", {
+                  body: "{{ message[3] }}", // Use message[3] as the notification body
+                  icon: "https://i.ibb.co/VwJH5Tz/Screenshot-2024-12-16-at-8-54-55-PM.png" // Optional icon
+                });
+              } else if (Notification.permission === "denied") {
+                // Notify the user about denied permissions
+                console.warn("Notification permission was previously denied.");
+              } else {
+                // Request permission if it hasn't been granted or denied yet
+                Notification.requestPermission().then(function (permission) {
+                  if (permission === "granted") {
+                    // Display the notification
+                    new Notification("{{ message[2] }}", {
+                      body: "{{ message[3] }}", // Use message[3] as the notification body
+                      icon: "https://i.ibb.co/VwJH5Tz/Screenshot-2024-12-16-at-8-54-55-PM.png" // Optional icon
+                    });
+                  } else {
+                    console.warn("Notification permission denied.");
+                  }
+                }).catch(function (error) {
+                  console.error("Error requesting permission:", error);
+                });
+              }
+            } else {
+              console.warn("Your browser doesn't support notifications.");
+            }
+          </script>
+          {% endif %}
+          
 
           
         {% endfor %}
