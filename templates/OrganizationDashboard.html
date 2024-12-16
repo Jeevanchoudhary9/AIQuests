@@ -298,39 +298,57 @@
     </div>
   </div>
 
-<div class="flex flex-col h-screen p-8 space-y-8">
-  <!-- Drag and Drop File Upload -->
-  <div 
-    class="flex flex-col justify-center items-center h-1/2 bg-white rounded-lg shadow-md border-dashed border-2 border-gray-300 relative" 
-    id="drop-area"
-  >
-    <form id="upload-form" class="flex flex-col items-center w-full" method="POST" action="/upload" enctype="multipart/form-data">
-      <p class="text-gray-500 mb-4">Drag and drop a file here, or click to upload</p>
-      <input id="file-input" type="file" name="file" class="hidden" accept=".pdf" />
-      <p id="selected-file" class="mt-4 text-gray-700 hidden">Selected file: <span class="font-semibold"></span></p>
-      <button 
-        type="submit" 
-        id="submit-button" 
-        class="mt-4 px-6 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-        disabled
-      >
-        Submit Document
-      </button>
-    </form>
-  </div>
-
-  <!-- Uploaded PDFs List -->
-  <div class="h-1/2 bg-white rounded-lg shadow-md p-4 overflow-y-auto">
-    <h2 class="text-xl font-bold mb-4">Uploaded PDFs</h2>
-    <div id="pdf-list" class="space-y-2">
-      {% for pdf in pdf_files %}
-      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-md shadow">
-        <span class="truncate">{{ pdf.filename }}</span>
-        <a href="{{ pdf.url }}" target="_blank" class="text-blue-500 hover:underline">View</a>
+<div class="flex flex-col h-screen p-12 bg-white">
+  <!-- Drop Area Container -->
+  <div class="flex flex-col justify-start items-center h-1/2 bg-white rounded-lg shadow-lg relative" id="drop-area">
+    <!-- Header Section -->
+    <div id="header" class="flex justify-between items-center w-full px-6 py-4 bg-gray-100 text-gray-900 font-bold rounded-t-lg border-b border-gray-300">
+      <span id="header-title" class="text-lg">Upload Files</span>
+      <div>
+        <form id="upload-form" class="flex flex-col items-center w-full h-full justify-center" method="POST" action="/upload" enctype="multipart/form-data">
+          <input id="file-input" type="file" name="file" class="hidden" accept=".pdf" />
+          <div id="file-info" class="hidden text-gray-700 text-center">
+            <button 
+              type="submit" 
+              id="submit-button" 
+              class="mt-4 px-6 py-2 bg-gray-100 text-gray-900 font-medium rounded-lg hover:bg-gray-200 transition hidden"
+            >
+              Submit
+            </button>
+          </div>
+        </form>
       </div>
-      {% endfor %}
+      <button 
+        id="trigger-button" 
+        class="px-4 py-2 bg-gray-100 text-gray-900 font-semibold rounded-lg shadow hover:bg-gray-200 transition"
+        onclick="triggerFileInput()"
+      >
+        Upload
+      </button>
+    </div>
+
+    <!-- PDF List Section -->
+    <div id="pdf-list" class="grid grid-cols-3 gap-6 p-6 overflow-y-auto w-full h-full bg-white rounded-b-lg">
+      {% if pdf_files|length > 0 %}
+        {% for pdf in pdf_files %}
+        <div class="flex flex-col items-center bg-gray-50 rounded-lg shadow p-4 hover:shadow-md transition">
+          <div class="w-full h-24 bg-gray-100 flex justify-center items-center text-gray-500 rounded-md">
+            <span class="font-medium text-lg">PDF</span>
+          </div>
+          <span class="truncate mt-3 text-gray-800 text-sm font-medium">{{ pdf.filename }}</span>
+          <a href="{{ pdf.url }}" target="_blank" class="text-blue-600 hover:underline mt-2 text-sm">View</a>
+        </div>
+        {% endfor %}
+      {% else %}
+      <div class="flex items-center justify-center w-full h-full">
+        <p class="text-gray-500 font-medium text-lg text-center">No files are available.</p>
+      </div>
+      {% endif %}
     </div>
   </div>
+</div>
+
+</div>
 </div>
 
   <!-- Edit user modal -->
@@ -522,58 +540,69 @@
             document.documentElement.classList.add('dark');
         }
 
-    const dropArea = document.getElementById('drop-area');
-    const fileInput = document.getElementById('file-input');
-    const selectedFileText = document.getElementById('selected-file');
-    const selectedFileSpan = selectedFileText.querySelector('span');
-    const submitButton = document.getElementById('submit-button');
+  const dropArea = document.getElementById('drop-area');
+  const fileInput = document.getElementById('file-input');
+  const fileInfo = document.getElementById('file-info');
+  const submitButton = document.getElementById('submit-button');
+  const triggerButton = document.getElementById('trigger-button');
+  const headerTitle = document.getElementById('header-title');
 
-    // Highlight the drop area on drag events
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
-      dropArea.addEventListener(event, (e) => e.preventDefault());
-    });
+  // Trigger file input dialog
+  function triggerFileInput() {
+    fileInput.click();
+  }
 
-    ['dragenter', 'dragover'].forEach(event => {
-      dropArea.addEventListener(event, () => dropArea.classList.add('border-blue-500'));
-    });
+  // Highlight the drop area on drag events
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
+    dropArea.addEventListener(event, (e) => e.preventDefault());
+  });
 
-    ['dragleave', 'drop'].forEach(event => {
-      dropArea.addEventListener(event, () => dropArea.classList.remove('border-blue-500'));
-    });
+  ['dragenter', 'dragover'].forEach(event => {
+    dropArea.addEventListener(event, () => dropArea.classList.add('bg-gray-100'));
+  });
 
-    // Handle drop event
-    dropArea.addEventListener('drop', (e) => {
-      const files = e.dataTransfer.files;
-      if (files.length > 0) {
-        fileInput.files = e.dataTransfer.files; // Transfer files to the input
-        handleFileSelection(fileInput.files[0]);
-      }
-    });
+  ['dragleave', 'drop'].forEach(event => {
+    dropArea.addEventListener(event, () => dropArea.classList.remove('bg-gray-100'));
+  });
 
-    // Open file dialog on click
-    dropArea.addEventListener('click', () => fileInput.click());
-
-    // Handle file input change
-    fileInput.addEventListener('change', () => {
-      const files = fileInput.files;
-      if (files.length > 0) {
-        handleFileSelection(files[0]);
-      }
-    });
-
-    // Handle file selection
-    function handleFileSelection(file) {
-      if (file.type === 'application/pdf') {
-        selectedFileSpan.textContent = file.name;
-        selectedFileText.classList.remove('hidden');
-        submitButton.disabled = false; // Enable submit button
-      } else {
-        alert('Only PDF files are allowed!');
-        fileInput.value = ''; // Clear invalid selection
-        selectedFileText.classList.add('hidden');
-        submitButton.disabled = true; // Disable submit button
-      }
+  // Handle drop event
+  dropArea.addEventListener('drop', (e) => {
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      fileInput.files = e.dataTransfer.files; // Transfer files to the input
+      handleFileSelection(fileInput.files[0]);
     }
+  });
+
+  // Handle file input change
+  fileInput.addEventListener('change', () => {
+    const files = fileInput.files;
+    if (files.length > 0) {
+      handleFileSelection(files[0]);
+    }
+  });
+
+  // Handle file selection
+  function handleFileSelection(file) {
+    if (file.type === 'application/pdf') {
+      fileInfo.classList.remove('hidden'); // Show file info
+      submitButton.classList.remove('hidden'); // Show submit button
+      triggerButton.classList.add('hidden'); // Hide upload button
+      headerTitle.textContent = `File Selected: ${file.name}`; // Update header title
+    } else {
+      alert('Only PDF files are allowed!');
+      fileInput.value = ''; // Clear invalid selection
+      resetForm();
+    }
+  }
+
+  // Reset form to initial state
+  function resetForm() {
+    fileInfo.classList.add('hidden');
+    submitButton.classList.add('hidden');
+    triggerButton.classList.remove('hidden');
+    headerTitle.textContent = 'Upload Files';
+  }
   </script>
 {% endblock %}
 
