@@ -700,6 +700,23 @@ def questions():
         for question in questions:
             question_whole.append(question.serializer())
         return render_template('questions.html',questions=question_whole,nav="All Questions")
+    
+@app.route('/answer_delete/<int:answerid>', methods=['GET'])
+@role_required(['admin', 'moderator'])
+def answer_delete(answerid):
+    answer = Answers.query.get(answerid)
+
+    if answer.answer == Answers.query.filter_by(questionid=answer.questionid,marked_as_official=True).first().answer:
+        if len(Answers.query.filter_by(questionid=answer.questionid,marked_as_official=True).all())>1:
+            Questions.query.filter_by(questionid=answer.questionid).first().official_answer = Answers.query.filter(Answers.questionid == answer.questionid,Answers.marked_as_official == True,Answers.answerid != answerid).first().answer
+        else:
+            Questions.query.filter_by(questionid=answer.questionid).first().official_answer = ""
+
+    question_id = answer.questionid
+    db.session.delete(answer)
+    db.session.commit()
+    flash(['Answer deleted successfully','success'])
+    return redirect(url_for('questions_details', question_id=question_id))
 
 
 @app.route('/questions_details/<int:question_id>', methods=['GET', 'POST'])
