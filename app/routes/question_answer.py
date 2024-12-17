@@ -248,88 +248,86 @@ def questions_delete(question_id):
         return redirect(url_for('moderator.moderator_dashboard'))
     return redirect(url_for('user.myquestions'))
 
+
+# from langchain_community.llms.ollama import Ollama
+# from langchain_core.prompts import ChatPromptTemplate
+# from langchain_core.output_parsers import StrOutputParser
+# import datetime
+# from ..utils.ai_part import is_abusive, keybertmodel, lemmatize_text
+# from ..models import db, Answers, Questions, Keywords
+
 def ask_question_function(app, question_id, org_id, title, body, tags):
     try:
-        # Explicitly set the app context within the thread
         with app.app_context():
-
-            hybrid_context = hybrid_search(f"{title} {body}", org_id)
+            # Perform hybrid and simple RAG search
+            hybrid_context = hybrid_search(f"{title} {body}", org_id, score_threshold=0.5)
             simple_context = search_answer(f"{title} {body}", org_id)
-            prompt = f"Answer the Question: {title} {body} from tag {' '.join(tags)} using existing context and knowledge "
 
-            if hybrid_context:
-                prompt += f"*{hybrid_context}*"
-            if not simple_context:
-                prompt += f" and *{simple_context}*"
-            
-            # Prompt for AI response
-            prompt = ChatPromptTemplate.from_messages(
-                [
-                    ("system", "You are a helpful assistant. Please respond to user queries."),
-                    ("user", prompt), 
-                ]
-            )
-            
+            # Build prompt based on context availability
+            base_prompt = f"Answer the Question: {title} {body} using existing context and knowledge."
+            if hybrid_context and simple_context:
+                base_prompt += f" Context: {hybrid_context} Context from Q&A pairs: {simple_context}"
+            elif hybrid_context:
+                base_prompt += f" Context: {hybrid_context}"
+            elif simple_context:
+                base_prompt += f" Context from Q&A pairs: {simple_context}"
+            else:
+                base_prompt += " No existing context found. Use your general knowledge to answer."
+
+            # Define the prompt template
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", "You are a helpful and accurate AI assistant."),
+                ("user", "Answer the following question based on the context:\n{question}")
+            ])
+
+            # Initialize the LLM and output parser
             llm = Ollama(model="llama3.2")
             output_parser = StrOutputParser()
             chain = prompt | llm | output_parser
 
-            # AI response
-            response = chain.invoke({"title": title, "body": body, "tags": ' '.join(tags)})
+            # Invoke the chain with the correct input
+            response = chain.invoke({"question": base_prompt})
 
-            # Check if AI response is toxic
+            # Check toxicity of the response
             is_toxic, details = is_abusive(response)
-            if not is_toxic:
-                answer = response
+            if is_toxic:
+                print("AI response flagged as toxic:", details)
+                return
 
-                # Extract keywords
-                extracted_keywords = [keyword[0] for keyword in keybertmodel.extract_keywords(answer)] + tags
+            # Save the AI-generated response to the database
+            extracted_keywords = [keyword[0] for keyword in keybertmodel.extract_keywords(response)] + tags
+            new_answer = Answers(
+                answer=response,
+                questionid=question_id,
+                userid=2,  # Assuming '2' is the AI's user ID
+                upvotes=0,
+                downvotes=0,
+                marked_as_official=False,
+                date=datetime.datetime.now(),
+            )
+            db.session.add(new_answer)
 
-                # Save the answer to the database
-                new_answer = Answers(
-                    answer=answer,
-                    questionid=question_id,
-                    userid=2,  # Adjust as needed
-                    upvotes=0,
-                    downvotes=0,
-                    marked_as_official=False,
-                    date=datetime.datetime.now(),
-                )
+            # Update question status and keywords
+            question = Questions.query.filter_by(questionid=question_id).first()
+            if question:
+                question.ai_answer = True
 
-                # Mark question as AI-answered
-                question = Questions.query.filter_by(questionid=question_id).first()
-                if question:
-                    question.ai_answer = True
+            for key in extracted_keywords:
+                key_lower = lemmatize_text(key.lower())
+                keyword_record = Keywords.query.filter_by(keyword=key_lower).first()
+                if keyword_record:
+                    keyword_record.count += 1
+                else:
+                    db.session.add(Keywords(keyword=key_lower, organization=org_id, count=1))
 
-                # Update or add keywords
-                for key in extracted_keywords:
-                    key_lower = lemmatize_text(key.lower())
-                    keyword_record = Keywords.query.filter_by(keyword=key_lower).first()
-                    if keyword_record:
-                        keyword_record.count += 1
-                    else:
-                        new_keyword = Keywords(
-                            keyword=key_lower,
-                            organization=org_id,
-                            count=1,
-                        )
-                        db.session.add(new_keyword)
-
-                # Commit changes
-                db.session.add(new_answer)
-                db.session.commit()
-
-                print("AI answered the question successfully.")
-            else:
-                print("AI response is toxic:", details)
+            db.session.commit()
+            print("AI successfully answered and saved the response.")
 
     except Exception as e:
         print("Error in ask_question_function:", str(e))
     finally:
-        print("Thread ended")
-        notification = {
+        notifications.append({
             "title": "AI Response",
             "body": "Your question has been answered by AI.",
             "redirect_url": '/questions'
-        }
-        notifications.append(notification)
+        })

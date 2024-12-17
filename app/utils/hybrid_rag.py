@@ -72,35 +72,25 @@ def pdf_to_documents(pdf_path, organisation_id):
         index_documents(documents, organisation_id)
 
 
-def hybrid_search(query, organisation_id, top_k=1):
-    # 1. Perform Syntactic Search (BM25) with organisation_id filter
+def hybrid_search(query, organisation_id, top_k=3, score_threshold=0.5):
+    # 1. BM25 Search
     bm25_query = {
         "query": {
             "bool": {
-                "must": [
-                    {"match": {"text": query}}
-                ],
-                "filter": [
-                    {"term": {"organisation_id": organisation_id}}
-                ]
+                "must": [{"match": {"text": query}}],
+                "filter": [{"term": {"organisation_id": organisation_id}}]
             }
         }
     }
     bm25_response = es.search(index=index_name, body=bm25_query, size=top_k)
     bm25_results = {
-        hit["_id"]: idx + 1 for idx, hit in enumerate(bm25_response["hits"]["hits"])
+        hit["_id"]: hit["_score"] for hit in bm25_response["hits"]["hits"]
     }
 
-    # 2. Perform Semantic Search (KNN) with organisation_id filter
+    # 2. Semantic Search
     query_embedding = embedding_model.encode(query).tolist()
     semantic_query = {
-        "query": {
-            "bool": {
-                "filter": [
-                    {"term": {"organisation_id": organisation_id}}
-                ]
-            }
-        },
+        "query": {"bool": {"filter": [{"term": {"organisation_id": organisation_id}}]}},
         "knn": {
             "field": "embedding",
             "query_vector": query_embedding,
@@ -110,19 +100,18 @@ def hybrid_search(query, organisation_id, top_k=1):
     }
     semantic_response = es.search(index=index_name, body=semantic_query, size=top_k)
     semantic_results = {
-        hit["_id"]: idx + 1 for idx, hit in enumerate(semantic_response["hits"]["hits"])
+        hit["_id"]: hit["_score"] for hit in semantic_response["hits"]["hits"]
     }
 
-    # 3. Combine Results using RRF
-    fused_results = reciprocal_rank_fusion(bm25_results, semantic_results)
-    sorted_results = sorted(fused_results.items(), key=lambda x: x[1], reverse=True)
+    # Combine Scores
+    fused_scores = reciprocal_rank_fusion(bm25_results, semantic_results)
+    sorted_results = sorted(fused_scores.items(), key=lambda x: x[1], reverse=True)
 
-    # 4. Fetch the text of the top results from Elasticsearch
+    # Filter low-score results
     result_texts = []
-    for doc_id, _ in sorted_results:
-        # Fetch document text by ID
-        doc = es.get(index=index_name, id=doc_id, _source_includes=["text"])
-        result_texts.append(doc["_source"]["text"])
-        print(doc["_source"]["text"])
+    for doc_id, score in sorted_results:
+        if score >= score_threshold:  # Only include relevant results
+            doc = es.get(index=index_name, id=doc_id, _source_includes=["text"])
+            result_texts.append(doc["_source"]["text"])
 
-    return " ".join(result_texts)  # Combine and return the top results as a single string
+    return " ".join(result_texts) if result_texts else ""  # Return combined context or empty
