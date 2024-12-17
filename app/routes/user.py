@@ -11,8 +11,8 @@ user_bpt = Blueprint('user', __name__)
 @user_bpt.route('/github_login')
 def github_login():
     if not github.authorized:
-        flash('Failed to login with github')
-        return redirect(url_for('user.login'))
+        flash(['Redirecting to login with github', 'info'])
+        return redirect(url_for("github.login"))
     else:
         account_info = github.get('/user')
         if account_info.ok:
@@ -97,6 +97,7 @@ def register(code=None, email=None):
         confirmpassword=request.form.get('confirmpassword')
         username=request.form.get('username')
         invitecode=request.form.get('invitecode')
+        print(firstname,lastname,email,password,confirmpassword,username,invitecode)
         role=Invites.query.filter_by(code=invitecode).first().role
 
         if username is None or password is None or email is None or  firstname is None or lastname is None or invitecode is None:

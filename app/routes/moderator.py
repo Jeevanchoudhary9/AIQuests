@@ -5,6 +5,7 @@ from flask import render_template, flash, redirect, url_for
 from flask import Blueprint
 from sqlalchemy import desc,asc
 import humanize
+from ..utils.simple_rag import index_qa_pairs
 
 moderator_bpt = Blueprint('moderator', __name__)
 
@@ -24,11 +25,6 @@ def moderator_dashboard():
     data_summary['questions']=len(questions)
     data_summary['answers']=len(answers)
 
-    # questions = [
-    #     {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
-    #     {'id': 2, 'title': 'Best practices for React state management?', 'short_description': 'Looking for suggestions on managing state...', 'time_ago': '1 day', 'answer_count': 3, 'asker_name': 'Jane Smith'},
-    #     {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
-    # ]
 
     return render_template('ModeratorDashboard.html', questions=questions,data_summary=data_summary,official=questions_marked_official,unofficial=question_notmarked_official,nav="Moderator Dashboard")
 
@@ -41,15 +37,24 @@ def question_moderation():
         new_questions.append(question.serializer())
     return render_template('moderate_questions.html',questions=new_questions,nav="Moderate Questions")
 
+
 @moderator_bpt.route('/mark_as_official/<int:answerid>', methods=['get'])
 @role_required('moderator')
 def mark_as_official(answerid):
     answer = Answers.query.get(answerid)
     answer.marked_as_official = True
-    Questions.query.filter_by(questionid=answer.questionid).first().official_answer = answer.answer
+    new_question = Questions.query.filter_by(questionid=answer.questionid).first()
+    new_question.official_answer = answer.answer
 
     db.session.commit()
     flash(['Answer marked as official','success'])
+
+    
+    index_qa_pairs(
+        {"question": f"{new_question.question_title} {new_question.question_detail}"},
+        session["org_id"]
+    )
+    
     return redirect(url_for('question_and_answer.questions_details', question_id=answer.questionid))
 
 

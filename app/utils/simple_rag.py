@@ -4,8 +4,8 @@ from .. import es, embedding_model
 index_name = os.getenv("QA_INDEX_NAME")
 
 # Index question-answer pairs for a specific organisation_id
-def index_qa_pairs(qa_pairs, organisation_id):
-    for idx, pair in enumerate(qa_pairs):
+def index_qa_pairs(qa_pairs, organisation_id, question_id):
+    for pair in enumerate(qa_pairs):
         question = pair["question"]
         answer = pair["answer"]
         embedding = embedding_model.encode(question).tolist()  # Embed the question
@@ -13,6 +13,7 @@ def index_qa_pairs(qa_pairs, organisation_id):
         # Index the document
         es.index(index=index_name, document={
             "organisation_id": organisation_id,
+            "question_id": question_id,
             "question": question,
             "answer": answer,
             "embedding": embedding

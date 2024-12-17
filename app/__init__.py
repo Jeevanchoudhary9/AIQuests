@@ -43,7 +43,8 @@ def create_rag_index(index_name):
     mapping = {
         "mappings": {
             "properties": {
-                "organisation_id": {"type": "keyword"},  # Filter for organizations
+                "organisation_id": {"type": "keyword"}, # Filter for organizations
+                "question_id": {"type": "keyword"},     # Filter for question id
                 "question": {"type": "text"},           # Store questions
                 "answer": {"type": "text"},             # Store answers
                 "embedding": {

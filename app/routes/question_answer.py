@@ -15,13 +15,15 @@ from ..utils.ai_part import lemmatize_text, is_abusive, keybertmodel
 from ..utils.email_notification import notifications
 from flask import Blueprint
 from concurrent.futures import ThreadPoolExecutor
+from ..utils.hybrid_rag import hybrid_search
+from ..utils.simple_rag import search_answer
 from flask import current_app
 
 QA_bpt = Blueprint('question_and_answer', __name__)
 executor = ThreadPoolExecutor(max_workers=5)
 
 @QA_bpt.route('/questions', methods=['GET', 'POST', 'DELETE', 'PUT'])
-def questions():
+def questions(filter="date"):
 
     if request.method=='POST': # Add the question
         question=request.form.get('question')
@@ -57,10 +59,15 @@ def questions():
 
     else: # Get all questions
         question_whole=[]
-        questions = Questions.query.order_by(Questions.date.desc()).all()
+        if filter=="date":
+            questions = Questions.query.order_by(Questions.date.desc()).all()
+        elif filter=="plus_one":
+            questions = Questions.query.order_by(Questions.plus_one.desc()).all()
+        elif filter=="":
+            questions = Questions.query.order_by(Questions.date.desc(), Questions.plus_one.asc()).all()
         for question in questions:
             question_whole.append(question.serializer())
-        return render_template('questions.html',questions=question_whole,nav="All Questions")
+        return render_template('questions.html',questions=question_whole,nav="All Questions",role=User.query.filter_by(userid=session['user_id']).first().role)
     
     
 @QA_bpt.route('/answer_delete/<int:answerid>', methods=['GET'])
@@ -229,14 +236,18 @@ def ask_question_function(app, question_id, org_id, title, body, tags):
     print("Thread started")
     try:
         # Explicitly set the app context within the thread
-        with app.app_context():  # Ensure app context is available in background thread
-            # Generate AI response
+        with app.app_context():
+
+            hybrid_context = hybrid_search(f"{title} {body}", org_id)
+            simple_context = search_answer(f"{title} {body}", org_id)
+
             prompt = ChatPromptTemplate.from_messages(
                 [
                     ("system", "You are a helpful assistant. Please respond to user queries."),
-                    ("user", f"Answer the Question: {title} {body} from tag {' '.join(tags)}")
+                    ("user", f"Answer the Question: {title} {body} from tag {' '.join(tags)} using existing context and knowledge {hybrid_context}"), 
                 ]
             )
+            
             llm = Ollama(model="llama3.2")
             output_parser = StrOutputParser()
             chain = prompt | llm | output_parser

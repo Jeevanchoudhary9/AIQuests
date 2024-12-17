@@ -110,6 +110,21 @@
                   >
                 </li>
                 {% elif nav=='All Questions' %}
+
+                {% if role=='moderator' %}
+                <li>
+                  <a href="{{ url_for('moderator.moderator_dashboard') }}">Dashboard</a>
+                </li>
+                <li>
+                  <a href="{{ url_for('question_and_answer.ask_question') }}"
+                    >Ask Question</a
+                  >
+                </li>
+                <li>
+                  <a href="{{ url_for('user.myquestions') }}">My Questions</a>
+                </li>
+                {% else %}
+
                 <li>
                   <a href="{{ url_for('user.user_dashboard') }}">Dashboard</a>
                 </li>
@@ -121,6 +136,7 @@
                 <li>
                   <a href="{{ url_for('user.myquestions') }}">My Questions</a>
                 </li>
+                {%endif%}
                 {% elif nav.startswith('Question ') %}
                 <li>
                   <a href="{{ url_for('user.user_dashboard') }}">Dashboard</a>

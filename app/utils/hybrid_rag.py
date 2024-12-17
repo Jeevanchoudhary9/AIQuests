@@ -24,6 +24,7 @@ def reciprocal_rank_fusion(bm25_results, semantic_results, k=60):
         fused_scores[doc_id] = fused_scores.get(doc_id, 0) + 1 / (rank + k)
     return fused_scores
 
+
 def get_next_elasticsearch_id(index_name):
     query = {
         "size": 0,
@@ -42,6 +43,7 @@ def get_next_elasticsearch_id(index_name):
     except:
         return 1  # Start from ID 1 if no documents exist
     
+
 def pdf_to_documents(pdf_path, organisation_id):
     if not os.path.exists(pdf_path):
         print(f"File not found: {pdf_path}")
@@ -70,7 +72,7 @@ def pdf_to_documents(pdf_path, organisation_id):
         index_documents(documents, organisation_id)
 
 
-def hybrid_search(query, organisation_id, top_k=5):
+def hybrid_search(query, organisation_id, top_k=1):
     # 1. Perform Syntactic Search (BM25) with organisation_id filter
     bm25_query = {
         "query": {
@@ -115,4 +117,12 @@ def hybrid_search(query, organisation_id, top_k=5):
     fused_results = reciprocal_rank_fusion(bm25_results, semantic_results)
     sorted_results = sorted(fused_results.items(), key=lambda x: x[1], reverse=True)
 
-    return sorted_results
+    # 4. Fetch the text of the top results from Elasticsearch
+    result_texts = []
+    for doc_id, _ in sorted_results:
+        # Fetch document text by ID
+        doc = es.get(index=index_name, id=doc_id, _source_includes=["text"])
+        result_texts.append(doc["_source"]["text"])
+        print(doc["_source"]["text"])
+
+    return " ".join(result_texts)  # Combine and return the top results as a single string

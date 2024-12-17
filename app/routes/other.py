@@ -9,10 +9,28 @@ import datetime
 from ..utils.role_check import role_required
 from ..utils.ai_part import allowed_file
 from ..utils.other import generate_demo_data
+from ..utils.hybrid_rag import pdf_to_documents
 from ..utils.email_notification import notifications
-from flask import Blueprint
+from flask import Blueprint, send_from_directory
+from flask import Flask, send_file, abort
+
 
 other_bpt = Blueprint('other', __name__)
+
+
+UPLOAD_FOLDER = os.path.join('upload')
+
+@other_bpt.route('/view/<filename>')
+def view_file(filename):
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    return send_file(file_path, as_attachment=False)  # Opens in browser
+
+
+
+@other_bpt.route('/uploads/<path:filename>')
+def serve_uploaded_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
 
 @other_bpt.route('/image/<int:id>')
 def get_image(id):
@@ -136,7 +154,6 @@ def upload_file():
     # Validate and process the file
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        UPLOAD_FOLDER = './uploaded_files'
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         
         # Save the file to the local storage
@@ -158,6 +175,8 @@ def upload_file():
             db.session.add(new_doc)
             db.session.commit()
             flash(['File successfully uploaded and details saved!', 'success'])
+
+            pdf_to_documents(file_path, orgid)
             return redirect(url_for('user.login'))  # Replace with the desired redirect
         except Exception as e:
             flash(f"Failed to save file details to database: {e}")

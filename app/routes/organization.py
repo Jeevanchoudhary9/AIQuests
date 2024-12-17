@@ -10,6 +10,7 @@ from flask import Blueprint
 
 organization_bpt = Blueprint('organization', __name__)
 
+
 @organization_bpt.route('/register/organization',methods=["GET", "POST"])
 def OrganizationRegister():
 

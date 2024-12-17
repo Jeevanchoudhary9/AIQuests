@@ -5,6 +5,7 @@ import humanize
 import datetime
 import re
 from . import db
+from flask import url_for
 
 class User(db.Model):
     __TableName__ = 'users'
@@ -361,7 +362,7 @@ class Docs(db.Model):
             'docid': self.docid,
             'docname': self.docname,
             'docdesc': self.docdesc,
-            'docpath': self.docpath,
+            'docpath': url_for('other.serve_uploaded_file', filename=self.docpath),
             'orgid': self.orgid
         }
 

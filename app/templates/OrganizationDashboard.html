@@ -16,10 +16,11 @@
     <div class="bg-white p-6 rounded-lg shadow-md">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold">Total Users</h3>
-        <svg class="h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-          stroke="currentColor">
-          <path d="M17 20h5v-1a3 3 0 00-3-3h-2a3 3 0 00-3 3v1h5z" />
-        </svg>
+        <img
+          src="{{ url_for('static', filename='img/users.png') }}"
+          alt="Total Users"
+          class="h-12 w-12 inline-block align-middle"
+        />
       </div>
       <p class="text-3xl font-bold">{{content.total_users}}</p>
       <p class="text-sm text-gray-500 mt-2">+100% from last month</p>
@@ -28,10 +29,11 @@
     <div class="bg-white p-6 rounded-lg shadow-md">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold">Questions</h3>
-        <svg class="h-6 w-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-          stroke="currentColor">
-          <path d="M8 10h8M8 6h8M8 14h8m-4 2h2a2 2 0 110 4h-4a2 2 0 01-4-4h2" />
-        </svg>
+        <img
+          src="{{ url_for('static', filename='img/ask.png') }}"
+          alt="Questions"
+          class="h-11 w-11 inline-block align-middle"
+        />
       </div>
       <p class="text-3xl font-bold">{{content.total_questions}}</p>
       <p class="text-sm text-gray-500 mt-2">+5% from last month</p>
@@ -40,10 +42,11 @@
     <div class="bg-white p-6 rounded-lg shadow-md">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold">Answers</h3>
-        <svg class="h-6 w-6 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-          stroke="currentColor">
-          <path d="M8 6h8m-8 4h8M8 14h4m-4 2h2a2 2 0 100-4H6a2 2 0 100 4h2" />
-        </svg>
+        <img
+          src="{{ url_for('static', filename='img/answers.png') }}"
+          alt="Answers"
+          class="h-11 w-11 inline-block align-middle"
+        />
       </div>
       <p class="text-3xl font-bold">{{content.total_answers}}</p>
       <p class="text-sm text-gray-500 mt-2">+18% from last month</p>
@@ -52,10 +55,11 @@
     <div class="bg-white p-6 rounded-lg shadow-md">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold">Reported Content</h3>
-        <svg class="h-6 w-6 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-          stroke="currentColor">
-          <path d="M12 9v2m0 4h.01m6.938-5.071a7.5 7.5 0 11-9.94 0" />
-        </svg>
+        <img
+          src="{{ url_for('static', filename='img/reported.png') }}"
+          alt="Reported Content"
+          class="h-11 w-11 inline-block align-middle"
+        />
       </div>
       <p class="text-3xl font-bold">23</p>
       <p class="text-sm text-gray-500 mt-2">Needs moderation</p>
