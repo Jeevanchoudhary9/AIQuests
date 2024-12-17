@@ -33,6 +33,6 @@ def role_required(roles=None):
 
             # If no matching role, deny access
             flash("You do not have permission to access this page.")
-            return redirect(url_for('login'))
+            return redirect(url_for('user.login'))
         return inner
     return decorator

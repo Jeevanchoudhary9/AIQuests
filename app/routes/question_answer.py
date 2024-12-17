@@ -193,11 +193,10 @@ def ask_question():
         db.session.add(new_question)
         db.session.commit()
 
-        # Submit the task to the executor with the app context
-        with current_app.app_context():
-            executor.submit(ask_question_function, random_id, org_id, title, body, tag_objects)
+        app = current_app._get_current_object()
+        executor.submit(ask_question_function, app, random_id, org_id, title, body, tag_objects)
 
-        flash('Your question is being posted in the background!', 'success')
+        flash(['Your question is being posted in the background!', 'success'])
         return redirect(url_for('question_and_answer.questions'))
 
     return render_template('AskQuestion.html', nav="Ask Question")
@@ -226,11 +225,11 @@ def questions_delete(question_id):
     return redirect(url_for('user.myquestions'))
 
 
-def ask_question_function(question_id, org_id, title, body, tags):
+def ask_question_function(app, question_id, org_id, title, body, tags):
     print("Thread started")
     try:
         # Explicitly set the app context within the thread
-        with current_app.app_context():  # Ensure app context is available in background thread
+        with app.app_context():  # Ensure app context is available in background thread
             # Generate AI response
             prompt = ChatPromptTemplate.from_messages(
                 [
