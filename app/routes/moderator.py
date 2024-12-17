@@ -49,10 +49,10 @@ def mark_as_official(answerid):
     db.session.commit()
     flash(['Answer marked as official','success'])
 
-    
     index_qa_pairs(
-        {"question": f"{new_question.question_title} {new_question.question_detail}"},
-        session["org_id"]
+        {"question": f"{new_question.question_title} {new_question.question_detail}", "answer": new_question.official_answer},
+        User.query.filter_by(userid=session.get('user_id')).first().organization,
+        Answers.query.filter_by(answerid=answerid).first().questionid
     )
     
     return redirect(url_for('question_and_answer.questions_details', question_id=answer.questionid))

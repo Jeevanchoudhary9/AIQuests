@@ -238,13 +238,15 @@ def ask_question_function(app, question_id, org_id, title, body, tags):
         # Explicitly set the app context within the thread
         with app.app_context():
 
-            hybrid_context = hybrid_search(f"{title} {body}", org_id)
-            simple_context = search_answer(f"{title} {body}", org_id)
+            hybrid_context = " ".join(hybrid_search(f"{title} {body}", org_id))
+            simple_context = " ".join([hit["answer"] for hit in search_answer(f"{title} {body}", org_id)])
+
+            print(simple_context)
 
             prompt = ChatPromptTemplate.from_messages(
                 [
                     ("system", "You are a helpful assistant. Please respond to user queries."),
-                    ("user", f"Answer the Question: {title} {body} from tag {' '.join(tags)} using existing context and knowledge {hybrid_context}"), 
+                    ("user", f"Answer the Question: {title} {body} from tag {' '.join(tags)} using existing context and knowledge {hybrid_context} {simple_context}"), 
                 ]
             )
             
