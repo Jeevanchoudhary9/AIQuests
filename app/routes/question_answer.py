@@ -18,9 +18,14 @@ from concurrent.futures import ThreadPoolExecutor
 from ..utils.hybrid_rag import hybrid_search
 from ..utils.simple_rag import search_answer
 from flask import current_app
+from langchain_community.tools import WikipediaQueryRun
+from langchain_community.utilities import WikipediaAPIWrapper
 
 QA_bpt = Blueprint('question_and_answer', __name__)
 executor = ThreadPoolExecutor(max_workers=5)
+
+api_wrapper = WikipediaAPIWrapper(top_k_results=1, doc_content_chars_max=200)
+wiki_tool = WikipediaQueryRun(api_wrapper=api_wrapper)
 
 @QA_bpt.route('/questions', methods=['GET', 'POST', 'DELETE', 'PUT'])
 def questions():
@@ -263,6 +268,11 @@ def ask_question_function(app, question_id, org_id, title, body, tags):
             hybrid_context = hybrid_search(f"{title} {body}", org_id, score_threshold=0.5)
             simple_context = search_answer(f"{title} {body}", org_id)
 
+            # If no context is found, fetch additional information from Wikipedia
+            wiki_context = ""
+            if not hybrid_context and not simple_context:
+                wiki_context = wiki_tool.run(title + " " + body)
+
             # Build prompt based on context availability
             base_prompt = f"Answer the Question: {title} {body} using existing context and knowledge."
             if hybrid_context and simple_context:
@@ -271,6 +281,8 @@ def ask_question_function(app, question_id, org_id, title, body, tags):
                 base_prompt += f" Context: {hybrid_context}"
             elif simple_context:
                 base_prompt += f" Context from Q&A pairs: {simple_context}"
+            elif wiki_context:
+                base_prompt += f" Additional context from Wikipedia: {wiki_context}"
             else:
                 base_prompt += " No existing context found. Use your general knowledge to answer."
 
