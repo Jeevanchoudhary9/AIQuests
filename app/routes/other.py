@@ -1,16 +1,20 @@
-from imports import *
-from role_check import *
-from user import *
-from moderator import *
-from up_down_votes import *
-from organization import *
+import datetime
+from flask import render_template, request, redirect, url_for, flash, session, send_file, jsonify
+from ..models import db, Plus_ones, Organizations,Docs
+from werkzeug.utils import secure_filename
+import io
+import os
+from flask import jsonify
+import datetime
+from ..utils.role_check import role_required
+from ..utils.ai_part import allowed_file
+from ..utils.other import generate_demo_data
+from ..utils.email_notification import notifications
+from flask import Blueprint
 
+other_bpt = Blueprint('other', __name__)
 
-
-
-
-
-@app.route('/image/<int:id>')
+@other_bpt.route('/image/<int:id>')
 def get_image(id):
     image = Organizations.query.get(id)
     return send_file(io.BytesIO(image.orglogo), mimetype='image/jpeg')
@@ -21,7 +25,7 @@ def get_image(id):
 #     return render_template('QuestionDetails.html') 
 
 
-@app.route('/<int:question_id>/plusone', methods=["POST"])
+@other_bpt.route('/<int:question_id>/plusone', methods=["POST"])
 @role_required('user')
 def plus_one(question_id):
     if request.method == "POST":
@@ -110,7 +114,7 @@ def plus_one(question_id):
 
 
 
-@app.route('/upload', methods=['POST'])
+@other_bpt.route('/upload', methods=['POST'])
 def upload_file():
     docdesc = request.form.get('docdesc') if request.form.get('docdesc') else ''
     orgid = session.get('org_id')
@@ -132,11 +136,11 @@ def upload_file():
     # Validate and process the file
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file_path = os.path.join(other_bpt.config['UPLOAD_FOLDER'], filename)
         
         # Save the file to the local storage
         try:
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            os.makedirs(other_bpt.config['UPLOAD_FOLDER'], exist_ok=True)
             file.save(file_path)
         except Exception as e:
             flash(f"Failed to save the file: {e}")
@@ -153,7 +157,7 @@ def upload_file():
             db.session.add(new_doc)
             db.session.commit()
             flash('File successfully uploaded and details saved!')
-            return redirect(url_for('login'))  # Replace with the desired redirect
+            return redirect(url_for('user.login'))  # Replace with the desired redirect
         except Exception as e:
             flash(f"Failed to save file details to database: {e}")
             db.session.rollback()
@@ -163,13 +167,43 @@ def upload_file():
         return redirect(request.url)
 
 
-@app.route('/dashboard/admin')
+@other_bpt.route('/dashboard/admin')
 def admin_dashboard():
     data = generate_demo_data()
     return render_template('admin_dashboard.html', data=data)
 
-@app.route('/logout')
+
+@other_bpt.route('/logout')
 def logout():
     session.pop('user_id',None)
     session.pop('org_id',None)
-    return redirect(url_for('login'))
+    return redirect(url_for('user.login'))
+
+@other_bpt.route("/trigger/<string:redirect_url>/<string:message_title>/<string:message_body>")
+def trigger_notification(redirect_url, message_title, message_body):
+    # Flash the message with the provided title and body
+    flash(['Background process completed!', 'success', message_title, message_body])
+    try:
+        # Redirect to the specified route
+        return redirect(url_for(redirect_url))
+    except Exception as e:
+        # Handle invalid redirect URL gracefully
+        return f"Error: {e}", 400
+
+# @app.route('/check_notification/<int:question_id>', methods=['GET'])
+# def check_notification(question_id):
+#     print("Checking notification for question ID:", question_id)
+#     if question_id in notification_data:
+#         # Return the notification data and remove it after sending
+#         return jsonify(notification_data.pop(question_id))
+#     return jsonify({"status": "pending"})
+
+@other_bpt.route('/check_notifications')
+def check_notifications():
+    if notifications:
+        # Pop the first notification from the list
+        notification = notifications.pop(0)
+        return jsonify({"notifications": [notification]})
+    else:
+        # If there are no notifications, return an empty list
+        return jsonify({"notifications": []})

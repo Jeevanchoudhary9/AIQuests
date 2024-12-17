@@ -1,18 +1,11 @@
-{% extends "layout.html" %}
-
-{% block title %}
-  Create Account
-{% endblock %}
-
-{% block style %}
-  <style>
-    .registercontainer {
-      padding-top: 1px; /* Margin from top */
-    }
-  </style>
-{% endblock %}
-
-{% block content %}
+{% extends "layout.html" %} {% block title %} Create Account {% endblock %} {%
+block style %}
+<style>
+  .registercontainer {
+    padding-top: 1px; /* Margin from top */
+  }
+</style>
+{% endblock %} {% block content %}
 <div class="bg-gradient-to-b from-blue-50 to-white">
   <div class="registercontainer max-w-md mx-auto">
     <div class="text-center mb-8">
@@ -21,13 +14,18 @@
     </div>
 
     <div class="bg-white rounded-lg shadow-md p-8">
-      <form action="{{ url_for('register') }}" method="POST">
+      <form action="{{ url_for('user.register') }}" method="POST">
         <button
           type="button"
           class="w-full flex items-center justify-center space-x-2 bg-gray-900 text-white p-3 rounded-md hover:bg-gray-800 mb-6"
           onclick="window.location.href='https://github.com/login/oauth/authorize?client_id=your_client_id'"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
             <path
               d="M12 0C5.373 0 0 5.373 0 12c0 5.303 3.438 9.8 8.207 11.387.6.113.793-.26.793-.577v-2.257c-3.338.726-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.091-.746.082-.73.082-.73 1.205.084 1.838 1.238 1.838 1.238 1.07 1.835 2.807 1.306 3.492.998.108-.775.42-1.306.763-1.607-2.665-.304-5.467-1.333-5.467-5.932 0-1.31.469-2.381 1.237-3.22-.123-.303-.536-1.524.117-3.176 0 0 1.008-.322 3.301 1.23a11.483 11.483 0 013.006-.404c1.02.005 2.046.138 3.006.404 2.292-1.553 3.3-1.23 3.3-1.23.654 1.653.241 2.874.118 3.176.77.84 1.236 1.91 1.236 3.22 0 4.61-2.805 5.624-5.478 5.921.43.371.814 1.102.814 2.221v3.293c0 .319.192.694.8.576C20.565 21.795 24 17.298 24 12 24 5.373 18.627 0 12 0z"
             />
@@ -47,7 +45,9 @@
         <div class="space-y-6">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">First name</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >First name</label
+              >
               <input
                 type="text"
                 name="first_name"
@@ -58,7 +58,9 @@
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Last name</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Last name</label
+              >
               <input
                 type="text"
                 name="last_name"
@@ -72,78 +74,106 @@
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Username</label
+              >
               <input
                 type="text"
                 name="username"
                 class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="username"
-                {% if code %}
+                {%
+                if
+                code
+                %}
                 value="{{ email }}"
-                {% else %}
-                  value=""
-                {% endif %}
+                {%
+                else
+                %}
+                value=""
+                {%
+                endif
+                %}
                 required
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Email address</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Email address</label
+              >
               <input
                 type="email"
                 name="email"
                 class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="you@example.com"
-                {% if code %}
+                {%
+                if
+                code
+                %}
                 value="{{ email }}"
-                {% else %}
-                  value=""
-                {% endif %}
+                {%
+                else
+                %}
+                value=""
+                {%
+                endif
+                %}
                 required
               />
             </div>
           </div>
           <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-            <input
-              type="password"
-              name="password"
-              class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="••••••••"
-              value=""
-              required
-            />
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Password</label
+              >
+              <input
+                type="password"
+                name="password"
+                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="••••••••"
+                value=""
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Confirm Password</label
+              >
+              <input
+                type="password"
+                name="confirmpassword"
+                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="••••••••"
+                value=""
+                required
+              />
+            </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2"
+              >Invite Code</label
+            >
             <input
-              type="password"
-              name="confirmpassword"
+              type="text"
+              name="invitecode"
               class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="••••••••"
-              value=""
-              required
-            />
-            
-          </div>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Invite Code</label>
-          <input
-            type="text"
-            name="invitecode"
-            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter Invite Code"
-            {% if code %}
+              placeholder="Enter Invite Code"
+              {%
+              if
+              code
+              %}
               value="{{ code }}"
-            {% else %}
+              {%
+              else
+              %}
               value=""
-            {% endif %}
-            required
-            
-          />
-
-        </div>
+              {%
+              endif
+              %}
+              required
+            />
+          </div>
 
           <div class="flex items-center">
             <input
@@ -154,9 +184,13 @@
             />
             <label class="ml-2 block text-sm text-gray-700">
               I agree to the
-              <a href="#" class="text-blue-600 hover:text-blue-500">Terms of Service</a>
+              <a href="#" class="text-blue-600 hover:text-blue-500"
+                >Terms of Service</a
+              >
               and
-              <a href="#" class="text-blue-600 hover:text-blue-500">Privacy Policy</a>
+              <a href="#" class="text-blue-600 hover:text-blue-500"
+                >Privacy Policy</a
+              >
             </label>
           </div>
 
@@ -172,7 +206,11 @@
 
     <p class="text-center mt-6 text-gray-600">
       Already have an account?
-      <a href="{{ url_for('login') }}" class="text-blue-600 hover:text-blue-500">Sign in</a>
+      <a
+        href="{{ url_for('user.login') }}"
+        class="text-blue-600 hover:text-blue-500"
+        >Sign in</a
+      >
     </p>
   </div>
 </div>

@@ -92,7 +92,7 @@
     <div class="bg-white p-6 rounded-lg shadow-md">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xl font-bold">Invited Users</h2>
-            <a href="{{url_for('userManager')}}" id="viewall" class="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-3 py-1.5" type="button">
+            <a href="{{url_for('organization.userManager')}}" id="viewall" class="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-3 py-1.5" type="button">
                 View All
             </a>
           </div>
@@ -174,7 +174,7 @@
     <div class="bg-white p-6 rounded-lg shadow-md">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xl font-bold">Registered Users</h2>
-            <a href="{{url_for('userManager')}}" id="viewall" class="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-3 py-1.5" type="button">
+            <a href="{{url_for('organization.userManager')}}" id="viewall" class="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-lg text-sm px-3 py-1.5" type="button">
                 View All
             </a>
           </div>
@@ -411,7 +411,7 @@
   <div id="inviteUserModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 items-center justify-center hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
       <div class="relative w-full max-w-2xl max-h-full">
           <!-- Modal content -->
-          <form class="relative bg-white rounded-lg shadow" action="{{url_for('inviteUser')}}" method="POST">
+          <form class="relative bg-white rounded-lg shadow" action="{{url_for('organization.inviteUser')}}" method="POST">
               <!-- Modal header -->
               <div class="flex items-start justify-between p-4 border-b rounded-t">
                   <h3 class="text-xl font-semibold text-gray-900">

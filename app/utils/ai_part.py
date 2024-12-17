@@ -1,5 +1,9 @@
-from imports import *
-from role_check import *
+from transformers import BertTokenizer
+import torch
+from keybert import KeyBERT
+from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
+from transformers import pipeline
 
 ALLOWED_EXTENSIONS = {'pdf'}
 
@@ -12,22 +16,18 @@ keybertmodel = KeyBERT('distilbert-base-nli-mean-tokens')
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 # model = BertModel.from_pretrained('bert-base-uncased')
 
-
-
+# Initialize lemmatizer
+lemmatizer = WordNetLemmatizer()
 
 def get_bert_embedding(text):
     """
     Generate BERT embedding for the given text.
     """
-    inputs = bert_tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
-    outputs = bert_model(**inputs)
+    inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
+    outputs = keybertmodel(**inputs)
     # Use the mean of the last hidden state as the embedding
     embedding = outputs.last_hidden_state.mean(dim=1).detach().numpy()
     return embedding
-
-
-# Initialize lemmatizer
-lemmatizer = WordNetLemmatizer()
 
 def lemmatize_text(text):
     words = word_tokenize(text)

@@ -1,14 +1,10 @@
 import html
-from app import app
-from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
 import datetime
 import humanize
 import datetime
 import re
-
-db=SQLAlchemy(app)
-
+from . import db
 
 class User(db.Model):
     __TableName__ = 'users'
@@ -366,9 +362,6 @@ class Docs(db.Model):
             'docpath': self.docpath,
             'orgid': self.orgid
         }
-        
-with app.app_context():
-    db.create_all()
 
     # admin=User.query.filter_by(username='admin').first()
     # if not admin:

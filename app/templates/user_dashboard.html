@@ -30,7 +30,7 @@
         Get answers from developers and AI, all in one place
       </p>
       <a
-        href="{{url_for('questions')}}"
+        href="{{url_for('question_and_answer.questions')}}"
         class="bg-orange-500 text-white px-8 py-3 rounded-md text-lg font-semibold hover:bg-orange-600"
       >
         View All Questions
@@ -68,7 +68,7 @@
         {% for question in questions %}
         <div class="border-b pb-6 last:border-0">
           <a
-            href=" {{url_for('questions_details', question_id=question.questionid) }}"
+            href=" {{url_for('question_and_answer.questions_details', question_id=question.questionid) }}"
             class="text-xl font-semibold text-blue-600 hover:text-blue-800 mb-2 block"
           >
             {{ question.question_title }}
@@ -102,7 +102,7 @@
             Get Started By Postsing Your First Question
           </div>
           <div class="flex">
-            <a href={{url_for('ask_question')}} class="text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-xs px-3 py-1.5 me-2 text-center inline-flex items-center">
+            <a href={{url_for('question_and_answer.ask_question')}} class="text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-xs px-3 py-1.5 me-2 text-center inline-flex items-center">
               
               <svg class="me-2 h-3 w-3 rtl:rotate-180 w-3.5 h-3.5 ms-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 5h12m0 0L9 1m4 4L9 9"/>

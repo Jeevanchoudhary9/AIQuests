@@ -1,7 +1,12 @@
-from imports import *
-from role_check import *
+import datetime
+from flask import session, jsonify
+from ..models import db, Questions, Plus_ones, Answers, Votes
+from flask import Blueprint
+from ..utils.role_check import role_required
 
-@app.route('/upvote/<int:question_id>', methods=['POST'])
+votes_bpt = Blueprint('votes', __name__)
+
+@votes_bpt.route('/upvote/<int:question_id>', methods=['POST'])
 @role_required('user')
 def upvote_question(question_id):
 
@@ -27,7 +32,7 @@ def upvote_question(question_id):
 
     return jsonify({"success": True, "new_count": new_count, "status": True})
 
-@app.route('/upvoteans/<int:answer_id>', methods=['POST'])
+@votes_bpt.route('/upvoteans/<int:answer_id>', methods=['POST'])
 @role_required('user')
 def upvote_answer(answer_id):
     
@@ -62,7 +67,7 @@ def upvote_answer(answer_id):
 
 
 
-@app.route('/downvoteans/<int:answer_id>',methods=['POST'])
+@votes_bpt.route('/downvoteans/<int:answer_id>',methods=['POST'])
 @role_required('user')
 def downvoteans(answer_id):
     if not session.get('user_id'):

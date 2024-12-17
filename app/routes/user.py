@@ -1,23 +1,27 @@
-from imports import *
-from role_check import *
-from question_answer import *
+from flask import render_template, request, redirect, url_for, flash, session
+from ..models import db, User, Questions, Organizations, Invites
+from werkzeug.security import generate_password_hash, check_password_hash
+from ..utils.role_check import role_required
+from flask import Blueprint
+
+user_bpt = Blueprint('user', __name__)
 
 # NOTE: This route takes to landing page
-@app.route('/')
+@user_bpt.route('/')
 def index():
     flash(['Welcome to AIQuest','success','Welcome','Welcome to AIQuest'])
     
     return render_template('Landingpage.html',nav="Welcome")
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@user_bpt.route('/login', methods=['GET', 'POST'])
 def login():
     if session.get('user_id'):
         if User.query.filter_by(userid=session.get('user_id')).first().role == 'moderator':
-            return redirect(url_for('moderator_dashboard'))
-        return redirect(url_for('user_dashboard'))
+            return redirect(url_for('moderator.moderator_dashboard'))
+        return redirect(url_for('user.user_dashboard'))
     if session.get('org_id'):
-        return redirect(url_for('organization_dashboard'))
+        return redirect(url_for('organization.organization_dashboard'))
     if request.method == 'POST':
         role = request.form.get('role')
         email = request.form.get('email')
@@ -29,10 +33,10 @@ def login():
                 session['user_id'] = user.userid
                 if user.role == 'moderator':
                     flash(['Moderator login successful!', 'success'])
-                    return redirect(url_for('moderator_dashboard'))
+                    return redirect(url_for('moderator.moderator_dashboard'))
                 elif user.role == 'user':
                     flash(['User login successful!', 'success'])
-                    return redirect(url_for('user_dashboard'))
+                    return redirect(url_for('user.user_dashboard'))
             organization = Organizations.query.filter_by(orgemail=email).first()
             if organization:
                 flash('Try switching to organization login')
@@ -45,13 +49,13 @@ def login():
             if organization and check_password_hash(organization.orgpassword, password):
                 session['org_id'] = organization.orgid
                 flash(['Organization login successful!','success'])
-                return redirect(url_for('organization_dashboard'))
+                return redirect(url_for('organization.organization_dashboard'))
             flash('Invalid organization credentials. Please try again.')
 
     return render_template('login.html',nav="Login")
 
 
-@app.route('/register',methods=["GET", "POST"])
+@user_bpt.route('/register',methods=["GET", "POST"])
 def register(code=None, email=None):
 
     if request.method == 'GET':
@@ -71,28 +75,28 @@ def register(code=None, email=None):
 
         if username is None or password is None or email is None or  firstname is None or lastname is None or invitecode is None:
             flash('Please fill the required fields')
-            return redirect(url_for('register'))
+            return redirect(url_for('user.register'))
         
         if password!=confirmpassword:
             flash('Passwords do not match')
-            return redirect(url_for('register'))
+            return redirect(url_for('user.register'))
         
         if User.query.filter_by(username=username).first():
             flash('Username already exists')
-            return redirect(url_for('register'))
+            return redirect(url_for('user.register'))
         
         if User.query.filter_by(email=email).first():
             flash('Email already exists')
-            return redirect(url_for('register'))
+            return redirect(url_for('user.register'))
         
         if not Invites.query.filter_by(code=invitecode).first():
             flash('Invalid invite code')
-            return redirect(url_for('register'))
+            return redirect(url_for('user.register'))
         
         invite = Invites.query.filter_by(code=invitecode).first()
         if invite.email != email:
             flash('Email does not match the invite code')
-            return redirect(url_for('register'))
+            return redirect(url_for('user.register'))
         
         orgid=invite.orgid
         
@@ -103,12 +107,12 @@ def register(code=None, email=None):
         db.session.commit()
         flash(['You have successfully registered','success'])
         
-        return redirect(url_for('login'))
+        return redirect(url_for('user.login'))
 
     return render_template('register.html',code=code,email=email,nav="User Register")
 
 
-@app.route('/dashboard/user')
+@user_bpt.route('/dashboard/user')
 @role_required("user")
 def user_dashboard():
 
@@ -125,7 +129,7 @@ def user_dashboard():
     return render_template('user_dashboard.html', questions=questions,nav="User Dashboard")
 
 
-@app.route('/myquestions',methods=['GET'])
+@user_bpt.route('/myquestions',methods=['GET'])
 @role_required('user')
 def myquestions():
     questions=Questions.query.filter_by(userid=session['user_id']).order_by(Questions.date.desc()).all()

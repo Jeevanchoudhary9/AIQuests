@@ -1,10 +1,16 @@
-from imports import *
-from role_check import *
-from email_notification import *
+from datetime import datetime, timedelta
+from ..models import db, User, Questions, Answers, Organizations, Invites, Docs
+from flask import request, render_template, redirect, url_for, flash, session, jsonify
+from werkzeug.security import generate_password_hash
+import random
+import string
+from ..utils.role_check import role_required
+from ..utils.other import generate_demo_data
+from flask import Blueprint
 
+organization_bpt = Blueprint('organization', __name__)
 
-
-@app.route('/register/organization',methods=["GET", "POST"])
+@organization_bpt.route('/register/organization',methods=["GET", "POST"])
 def OrganizationRegister():
 
     if request.method == 'POST':
@@ -21,69 +27,26 @@ def OrganizationRegister():
 
         if orgname is None or orgemail is None or orgpassword is None or confirmpassword is None or orgwebsite is None:
             flash('Please fill the required fields')
-            return redirect(url_for('orgregister'))
+            return redirect(url_for('organization.OrganizationRegister'))
         elif orgpassword!=confirmpassword:
             flash('Passwords do not match')
-            return redirect(url_for('orgregister'))
+            return redirect(url_for('organization.OrganizationRegister'))
         elif Organizations.query.filter_by(orgemail=orgemail).first():
             flash('Email already exists')
-            return redirect(url_for('orgregister'))
+            return redirect(url_for('organization.OrganizationRegister'))
         else:
             organization=Organizations(orgname=orgname,orglogo=orglogo,orgemail=orgemail,orgphone=orgphone,
                                        orgpassword=generate_password_hash(orgpassword),orgwebsite=orgwebsite,orgtype=orgtype,orgdesc=orgdesc,created_at=created_at)
             db.session.add(organization)
             db.session.commit()
             flash(['You have successfully registered','success'])
-            return redirect(url_for('login'))
+            return redirect(url_for('user.login'))
 
     return render_template('organizationRegister.html',nav="Organization Register")
 
 
-
-def generate_demo_data():
-    # Generate sample time-series data for the past 30 days
-    dates = [(datetime.datetime.now() - timedelta(days=x)).strftime('%Y-%m-%d') for x in range(30)]
-    
-    return {
-        'user_metrics': {
-            'total_users': 1250,
-            'active_users': 890,
-            'new_users_today': 25
-        },
-        'content_metrics': {
-            'total_questions': 3450,
-            'total_answers': 12340,
-            'ai_answers': 5670
-        },
-        'trending_tags': [
-            {'name': 'Python', 'count': 450},
-            {'name': 'JavaScript', 'count': 380},
-            {'name': 'React', 'count': 320},
-            {'name': 'Flutter', 'count': 290},
-            {'name': 'Docker', 'count': 250}
-        ],
-        'time_series_data': {
-            'dates': dates,
-            'questions': [random.randint(10, 50) for _ in range(30)],
-            'answers': [random.randint(30, 100) for _ in range(30)]
-        },
-        'top_questions': [
-            {'title': 'How to implement LinkedList in Rust?', 'views': 1200, 'answers': 5},
-            {'title': 'Best practices for React hooks', 'views': 980, 'answers': 8},
-            {'title': 'Python async vs threading', 'views': 850, 'answers': 6},
-            {'title': 'Docker container networking', 'views': 720, 'answers': 4},
-            {'title': 'Flutter state management', 'views': 690, 'answers': 7}
-        ],
-        'moderation_stats': {
-            'flagged_content': 23,
-            'pending_reviews': 12,
-            'resolved_today': 45
-        }
-    }
-
-
 # NOTE: Organization dashboard
-@app.route('/dashboard/organization')
+@organization_bpt.route('/dashboard/organization')
 @role_required('organization')
 def organization_dashboard():
     questions = [
@@ -122,10 +85,7 @@ def organization_dashboard():
                         )
 
 
-
-
-
-@app.route('/invite_user',methods=["POST"])
+@organization_bpt.route('/invite_user',methods=["POST"])
 @role_required('organization')
 def inviteUser():
     email = request.form.get('email')
@@ -135,10 +95,10 @@ def inviteUser():
 
     if email is None or role is None:
         flash('Please fill the required fields')
-        return redirect(url_for('userManager'))
+        return redirect(url_for('organization.userManager'))
     elif Invites.query.filter_by(email=email).first():
         flash('Email already exists')
-        return redirect(url_for('userManager'))
+        return redirect(url_for('organization.userManager'))
 
     characters = string.ascii_uppercase + string.digits
     code = ''.join(random.choice(characters) for _ in range(16))
@@ -151,8 +111,8 @@ def inviteUser():
     db.session.add(invite)
     db.session.commit()
     flash(['Invited successfully','success'])
-    register_url=url_for('register', code=code,email=email, _external=True)
-    browser_url = url_for('invitedmail', code=code,email=email,role=role, _external=True)
+    register_url=url_for('user.register', code=code,email=email, _external=True)
+    browser_url = url_for('organization.invitedmail', code=code,email=email,role=role, _external=True)
     print(register_url)
 
     # email sent part 
@@ -167,10 +127,10 @@ def inviteUser():
     # thread.start()
     flash(['Mail sent successfully','success'])
 
-    return redirect(url_for('userManager'))
+    return redirect(url_for('organization.userManager'))
 
 
-@app.route('/inivtedmail')
+@organization_bpt.route('/invitedmail')
 def invitedmail(email=None,code=None,role=None):
     email = request.args.get('email')
     code = request.args.get('code')
@@ -178,18 +138,16 @@ def invitedmail(email=None,code=None,role=None):
     print(email,code,role)
     # browser user
     if not (email is None and code is None and role is None):
-        register_url=url_for('register', code=code,email=email, _external=True)
+        register_url=url_for('user.register', code=code,email=email, _external=True)
         return render_template('emailinvite.html',email=email,code=code,role=role,register_url=register_url,browser_url=None)
     # email user
     else:
-        register_url=url_for('register', code="1234 5678 9012 3456",email="demo@gmail.com", _external=True)
-        browser_url = url_for('invitedmail', code="1234 5678 9012 3456",email="demo@gmail.com",role="admin", _external=True)
+        register_url=url_for('user.register', code="1234 5678 9012 3456",email="demo@gmail.com", _external=True)
+        browser_url = url_for('organization.invitedmail', code="1234 5678 9012 3456",email="demo@gmail.com",role="admin", _external=True)
         return render_template('emailinvite.html',email="demo@gmail.com",code="1234 5678 9012 3456",role="admin",register_url=register_url,browser_url=browser_url)
 
 
-
-
-@app.route('/UserManager')
+@organization_bpt.route('/UserManager')
 @role_required('organization')
 def userManager():
     invites = Invites.query.all()
@@ -203,7 +161,7 @@ def userManager():
     return render_template('OrgUserManager.html',invites=all_invites,nav="User Manager")
 
 
-@app.route('/UserManager', methods=['POST'])
+@organization_bpt.route('/UserManager', methods=['POST'])
 @role_required('organization')
 def UserManager():
     try:
@@ -263,7 +221,7 @@ def UserManager():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
-@app.route('/UserManager', methods=['DELETE'])
+@organization_bpt.route('/UserManager', methods=['DELETE'])
 @role_required('organization')
 def UserManager_delete():
     print(request.get_json())
@@ -288,4 +246,3 @@ def UserManager_delete():
         db.session.commit()
 
     return jsonify({'success': True})
-

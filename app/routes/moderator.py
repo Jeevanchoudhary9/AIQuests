@@ -1,8 +1,11 @@
-from imports import *
-from role_check import *
+from ..models import db, Questions, Answers
+from ..utils.role_check import role_required
+from flask import render_template, flash, redirect, url_for
+from flask import Blueprint
 
-# NOTE: 
-@app.route('/dashboard/moderator')
+moderator_bpt = Blueprint('moderator', __name__)
+
+@moderator_bpt.route('/dashboard/moderator')
 @role_required('moderator')
 def moderator_dashboard():
     questions = [
@@ -14,8 +17,7 @@ def moderator_dashboard():
     return render_template('ModeratorDashboard.html', questions=questions,nav="Moderator Dashboard")
 
 
-
-@app.route('/mark_as_official/<int:answerid>', methods=['get'])
+@moderator_bpt.route('/mark_as_official/<int:answerid>', methods=['get'])
 @role_required('moderator')
 def mark_as_official(answerid):
     answer = Answers.query.get(answerid)
@@ -24,9 +26,10 @@ def mark_as_official(answerid):
 
     db.session.commit()
     flash(['Answer marked as official','success'])
-    return redirect(url_for('questions_details', question_id=answer.questionid))
+    return redirect(url_for('question_and_answer.questions_details', question_id=answer.questionid))
 
-@app.route('/unmark_as_official/<int:answerid>', methods=['get'])
+
+@moderator_bpt.route('/unmark_as_official/<int:answerid>', methods=['get'])
 @role_required('moderator')
 def unmark_as_official(answerid):
     answer = Answers.query.get(answerid)
@@ -38,4 +41,4 @@ def unmark_as_official(answerid):
 
     db.session.commit()
     flash(['Answer unmarked as official','success'])
-    return redirect(url_for('questions_details', question_id=answer.questionid))
+    return redirect(url_for('question_and_answer.questions_details', question_id=answer.questionid))
