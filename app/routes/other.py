@@ -136,15 +136,16 @@ def upload_file():
     # Validate and process the file
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        file_path = os.path.join(other_bpt.config['UPLOAD_FOLDER'], filename)
+        UPLOAD_FOLDER = './uploaded_files'
+        file_path = os.path.join(UPLOAD_FOLDER, filename)
         
         # Save the file to the local storage
         try:
-            os.makedirs(other_bpt.config['UPLOAD_FOLDER'], exist_ok=True)
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
             file.save(file_path)
         except Exception as e:
             flash(f"Failed to save the file: {e}")
-            return redirect(request.url)
+            return redirect(url_for('user.login'))
 
         # Save file details to the database
         new_doc = Docs(
@@ -156,7 +157,7 @@ def upload_file():
         try:
             db.session.add(new_doc)
             db.session.commit()
-            flash('File successfully uploaded and details saved!')
+            flash(['File successfully uploaded and details saved!', 'success'])
             return redirect(url_for('user.login'))  # Replace with the desired redirect
         except Exception as e:
             flash(f"Failed to save file details to database: {e}")

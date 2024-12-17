@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from elasticsearch import Elasticsearch
 from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
+from flask_dance.contrib.github import make_github_blueprint, github
 
 load_dotenv()
 
@@ -70,6 +71,7 @@ def create_app():
     app.config['UPLOAD_FOLDER'] = './uploaded_files'
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB upload limit
     app.secret_key = 'supersecretkey'
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1' #github
 
     os.environ["LANGCHAIN_TRACING_V2"] = os.getenv("LANGCHAIN_TRACING_V2")
     os.environ["LANGCHAIN_ENDPOINT"] = os.getenv("LANGCHAIN_ENDPOINT")
@@ -92,7 +94,13 @@ def create_app():
     app.register_blueprint(QA_bpt,url_prefix='/')
     app.register_blueprint(other_bpt,url_prefix='/')
 
+    github_blueprint =  make_github_blueprint(client_id="Ov23liKvW6x8kR3KgYjv",client_secret='e5b107533855dcc73beac7b3cae13c76bb601d96')
+    app.register_blueprint(github_blueprint,url_prefix='/github_login')
+
     create_doc_index(os.getenv("DOC_INDEX_NAME"))
     create_rag_index(os.getenv("QA_INDEX_NAME"))
+
+    with app.app_context():
+        db.create_all()
 
     return app

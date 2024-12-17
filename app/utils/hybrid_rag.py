@@ -42,7 +42,7 @@ def get_next_elasticsearch_id(index_name):
     except:
         return 1  # Start from ID 1 if no documents exist
     
-def pdf_to_documents(pdf_path, index_name, organisation_id):
+def pdf_to_documents(pdf_path, organisation_id):
     if not os.path.exists(pdf_path):
         print(f"File not found: {pdf_path}")
         return

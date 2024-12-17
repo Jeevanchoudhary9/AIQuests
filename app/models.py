@@ -16,6 +16,7 @@ class User(db.Model):
     passhash = db.Column(db.String(1024), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='user')
     organization = db.Column(db.Integer, db.ForeignKey('organizations.orgid'), nullable=True)
+    github_id = db.Column(db.String(200), nullable=True)
      
     def check_password(self, password):
         return check_password_hash(self.passhash, password)
@@ -33,7 +34,8 @@ class User(db.Model):
             'lastname': self.lastname,
             'email': self.email,
             'username': self.username,
-            'organization': self.organization
+            'organization': self.organization,
+            'github_id': self.github_id
         }
 
 

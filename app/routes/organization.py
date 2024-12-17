@@ -49,20 +49,24 @@ def OrganizationRegister():
 @organization_bpt.route('/dashboard/organization')
 @role_required('organization')
 def organization_dashboard():
-    questions = [
-        {'id': 1, 'title': 'How to implement authentication in React?', 'short_description': 'I need to implement authentication...', 'time_ago': '2 hours', 'answer_count': 5, 'asker_name': 'John Doe'},
-        {'id': 2, 'title': 'Best practices for React state management?', 'short_description': 'Looking for suggestions on managing state...', 'time_ago': '1 day', 'answer_count': 3, 'asker_name': 'Jane Smith'},
-        {'id': 3, 'title': 'How to optimize React performance?', 'short_description': 'Performance optimization tips...', 'time_ago': '3 days', 'answer_count': 8, 'asker_name': 'Mark Lee'}
-    ]
+    # Get last 5 questions for organization
+    questions = []
+    ques = Questions.query.filter_by(orgid=session['org_id']).order_by(Questions.date.desc()).limit(3).all()
+    for que in ques:
+        questions.append(que.serializer())
+
 
     pdf_files = Docs.query.filter_by(orgid=session['org_id']).all()
     pdf_files_serialized = [doc.serializer() for doc in pdf_files]
     all_invites = []
+
     # top 5 user having role user and moderator
     top_5_user = Invites.query.filter(Invites.registered == True).order_by(Invites.date.desc()).limit(5).all()
     top_5_moderator = Invites.query.filter(Invites.registered == False).order_by(Invites.date.desc()).limit(5).all()
+
     for invite in top_5_user:
         all_invites.append(invite.serializer())
+        
     for invite in top_5_moderator:
         all_invites.append(invite.serializer())
 
@@ -78,7 +82,7 @@ def organization_dashboard():
                             'OrganizationDashboard.html',
                             data=generate_demo_data(),
                             questions=questions,
-                            invites=all_invites,
+                            invites=[] if len(all_invites) else all_invites,
                             nav="Organization Dashboard",
                             content=content,
                             pdf_files=pdf_files_serialized

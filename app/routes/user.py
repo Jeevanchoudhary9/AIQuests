@@ -3,8 +3,34 @@ from ..models import db, User, Questions, Organizations, Invites
 from werkzeug.security import generate_password_hash, check_password_hash
 from ..utils.role_check import role_required
 from flask import Blueprint
+from flask_dance.contrib.github import github
 
 user_bpt = Blueprint('user', __name__)
+
+
+@user_bpt.route('/github_login')
+def github_login():
+    if not github.authorized:
+        flash('Failed to login with github')
+        return redirect(url_for('user.login'))
+    else:
+        account_info = github.get('/user')
+        if account_info.ok:
+            account_info_json = account_info.json()
+            id=account_info_json['login']
+            user=User.query.filter_by(github_id=id).first()
+            print(account_info_json)
+            if user:
+                session['user_id'] = user.userid
+                flash(['User login successful!', 'success'])
+                return redirect(url_for('user.user_dashboard'))
+            else:
+                flash('User not registered to for this github facility')
+                return redirect(url_for('user.login'))
+
+    flash('Failed to login with github')
+    return redirect(url_for('user.login'))
+
 
 # NOTE: This route takes to landing page
 @user_bpt.route('/')
@@ -99,9 +125,13 @@ def register(code=None, email=None):
             return redirect(url_for('user.register'))
         
         orgid=invite.orgid
-        
-        user=User(firstname=firstname,lastname=lastname,username=username,
-                  email=email,passhash=generate_password_hash(password),organization=orgid,role=role)
+        if request.form.get('github_id'):
+            github_id=request.form.get('github_id')
+            user=User(firstname=firstname,lastname=lastname,username=username,
+                  email=email,passhash=generate_password_hash(password),organization=orgid,role=role,github_id=github_id)
+        else:
+            user=User(firstname=firstname,lastname=lastname,username=username,
+                    email=email,passhash=generate_password_hash(password),organization=orgid,role=role)
         invite.registered = True
         db.session.add(user)
         db.session.commit()
