@@ -1,5 +1,6 @@
-from datetime import datetime, timedelta
+import datetime
 import random
+from datetime import timedelta
 
 def generate_demo_data():
     # Generate sample time-series data for the past 30 days

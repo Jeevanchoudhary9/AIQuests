@@ -14,8 +14,11 @@ from ..utils.role_check import role_required
 from ..utils.ai_part import lemmatize_text, is_abusive, keybertmodel
 from ..utils.email_notification import notifications
 from flask import Blueprint
+from concurrent.futures import ThreadPoolExecutor
+from flask import current_app
 
 QA_bpt = Blueprint('question_and_answer', __name__)
+executor = ThreadPoolExecutor(max_workers=5)
 
 @QA_bpt.route('/questions', methods=['GET', 'POST', 'DELETE', 'PUT'])
 def questions():
@@ -152,7 +155,6 @@ def questions_details(question_id):
 @QA_bpt.route('/ask_question', methods=["GET", "POST"])
 @role_required('user')
 def ask_question():
-
     if request.method == "POST":
         title = request.form.get('title')
         body = request.form.get('body')
@@ -165,39 +167,40 @@ def ask_question():
             flash('The question content is toxic/abusive cannot be posted. We apologize for the inconvenience.', 'error')
             return redirect(url_for('question_and_answer.ask_question'))
 
-         # Basic validation to check if all fields are filled
+        # Basic validation
         if not title or not body or not tags:
             flash('Please fill in all fields.', 'error')
             return redirect(url_for('question_and_answer.ask_question'))
         
+        # Get organization ID
         org_id = User.query.filter_by(userid=session.get('user_id')).first().organization
 
-        # Optional: Process and store tags (you may choose to split them by commas or space)
+        # Process tags
         tag_objects = [tag.strip() for tag in tags.split(',')]
 
+        # Save the question in the database
         new_question = Questions(
-            questionid = random_id,
+            questionid=random_id,
             question_title=title,
             question_detail=body,
             date=datetime.datetime.now(),
             official_answer="",
             userid=session.get('user_id'),
-            tags =tag_objects,
+            tags=tag_objects,
             orgid=org_id
         )
 
         db.session.add(new_question)
         db.session.commit()
 
-        # Create a new thread to run ask_question_function asynchronously
-        thread = threading.Thread(target=ask_question_function, args=(random_id, org_id, title, body, tag_objects))
-        print('thread startng')
-        thread.start()
+        # Submit the task to the executor with the app context
+        with current_app.app_context():
+            executor.submit(ask_question_function, random_id, org_id, title, body, tag_objects)
 
-        flash(['Your question is being posted in the background!', 'success'])
-        return redirect(url_for('question_and_answer.questions'))  # Redirect to the same page or another page
-    
-    return render_template('AskQuestion.html',nav="Ask Question")
+        flash('Your question is being posted in the background!', 'success')
+        return redirect(url_for('question_and_answer.questions'))
+
+    return render_template('AskQuestion.html', nav="Ask Question")
 
 
 @QA_bpt.route('/questions_delete/<int:question_id>',methods=['GET'])
@@ -226,8 +229,8 @@ def questions_delete(question_id):
 def ask_question_function(question_id, org_id, title, body, tags):
     print("Thread started")
     try:
-        # Use app context explicitly
-        with QA_bpt.app_context():
+        # Explicitly set the app context within the thread
+        with current_app.app_context():  # Ensure app context is available in background thread
             # Generate AI response
             prompt = ChatPromptTemplate.from_messages(
                 [
@@ -254,7 +257,7 @@ def ask_question_function(question_id, org_id, title, body, tags):
                 new_answer = Answers(
                     answer=answer,
                     questionid=question_id,
-                    userid=2,  # Adjust based on your logic
+                    userid=2,  # Adjust as needed
                     upvotes=0,
                     downvotes=0,
                     marked_as_official=False,
@@ -290,18 +293,11 @@ def ask_question_function(question_id, org_id, title, body, tags):
 
     except Exception as e:
         print("Error in ask_question_function:", str(e))
-        
     finally:
         print("Thread ended")
-        # Save the notification status globally
-        # Add the notification to the list
         notification = {
             "title": "AI Response",
             "body": "Your question has been answered by AI.",
-            "redirect_url": '/questions'  # Optional field
+            "redirect_url": '/questions'
         }
-
-        notifications.append(notification)  
-        # Instead of flash, consider logging or saving the notification elsewhere
-        # Trigger a background notification using something else (e.g., a custom notification model)
-        # return redirect(url_for('trigger_notification', redirect_url='questions', message_title='Question Posted', message_body='Your question has been posted successfully!'))
+        notifications.append(notification)
