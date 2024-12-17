@@ -20,7 +20,7 @@
           />
         </div>
         <p class="text-3xl font-bold">{{data_summary.users}}</p>
-        <p class="text-sm text-gray-500 mt-2">+12% from last month</p>
+        <p class="text-sm text-gray-500 mt-2">Total Users in Organisation</p>
       </div>
 
       <div class="bg-white p-6 rounded-lg shadow-md">
@@ -33,7 +33,7 @@
           />
         </div>
         <p class="text-3xl font-bold">{{data_summary.questions}}</p>
-        <p class="text-sm text-gray-500 mt-2">+5% from last month</p>
+        <p class="text-sm text-gray-500 mt-2">Total Questions Asked</p>
       </div>
 
       <div class="bg-white p-6 rounded-lg shadow-md">
@@ -46,20 +46,20 @@
           />
         </div>
         <p class="text-3xl font-bold">{{data_summary.answers}}</p>
-        <p class="text-sm text-gray-500 mt-2">+18% from last month</p>
+        <p class="text-sm text-gray-500 mt-2">Total Answers Given</p>
       </div>
 
       <div class="bg-white p-6 rounded-lg shadow-md">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold">Reported Content</h3>
+          <h3 class="text-lg font-semibold">Total Invites</h3>
           <img
             src="{{ url_for('static', filename='img/reported.png') }}"
             alt="Reported Content"
             class="h-11 w-11 inline-block align-middle"
           />
         </div>
-        <p class="text-3xl font-bold">23 pending block</p>
-        <p class="text-sm text-gray-500 mt-2">Needs moderation</p>
+        <p class="text-3xl font-bold">{{data_summary.total_invites}}</p>
+        <p class="text-sm text-gray-500 mt-2">Total Invites Sent</p>
       </div>
     </div>
 
@@ -102,20 +102,15 @@
       </div>
 
       <div class="bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-xl font-bold mb-6">Answers Pending Verification</h2>
+        <h2 class="text-xl font-bold mb-6">Offical Answers</h2>
         <div class="space-y-4">
           <!-- charts started -->
           <div
-            class="max-w-sm w-full bg-white rounded-lg shadow p-4 md:p-6"
+            class=" w-full bg-white rounded-lg shadow p-4 md:p-6"
           >
             <!-- Donut Chart -->
             <div class="py-6" id="donut-chart"></div>
 
-            <div
-              class="grid grid-cols-1 items-center border-gray-200 border-t justify-between"
-            >
-              somethsisns
-            </div>
           </div>
 
           <!-- charts ended -->
@@ -128,8 +123,8 @@
 <script>
   const getChartOptions = () => {
     return {
-      series: [35.1, 23.5, 2.4, 5.4],
-      colors: ["#1C64F2", "#16BDCA", "#FDBA8C", "#E74694"],
+      series: [{{data_summary.official}}, {{data_summary.unofficial}}],
+      colors: ["#1C64F2", "#E74694"],
       chart: {
         height: 320,
         width: "100%",
@@ -152,13 +147,13 @@
               total: {
                 showAlways: true,
                 show: true,
-                label: "Unique visitors",
+                label: "Officially Answered",
                 fontFamily: "Inter, sans-serif",
                 formatter: function (w) {
                   const sum = w.globals.seriesTotals.reduce((a, b) => {
-                    return a + b;
-                  }, 0);
-                  return "$" + sum + "k";
+                    return  ((a/(a+b))*100).toFixed(1);
+                  });
+                  return sum+'%';
                 },
               },
               value: {
@@ -166,7 +161,7 @@
                 fontFamily: "Inter, sans-serif",
                 offsetY: -20,
                 formatter: function (value) {
-                  return value + "k";
+                  return value;
                 },
               },
             },
@@ -179,7 +174,7 @@
           top: -2,
         },
       },
-      labels: ["Offical Marked", "Marking Pending"],
+      labels: ["Officially Answered", "Pending"],
       dataLabels: {
         enabled: false,
       },
@@ -190,14 +185,14 @@
       yaxis: {
         labels: {
           formatter: function (value) {
-            return value + "k";
+            return value;
           },
         },
       },
       xaxis: {
         labels: {
           formatter: function (value) {
-            return value + "k";
+            return value;
           },
         },
         axisTicks: {

@@ -1,4 +1,4 @@
-from ..models import db, Questions, Answers, User
+from ..models import db, Questions, Answers, User, Invites
 from ..utils.role_check import role_required
 from flask import session
 from flask import render_template, flash, redirect, url_for
@@ -24,6 +24,11 @@ def moderator_dashboard():
     data_summary['users']=len(User.query.filter_by(userid = session.get('user_id')).all())
     data_summary['questions']=len(questions)
     data_summary['answers']=len(answers)
+    data_summary['official']=len(questions_marked_official)
+    data_summary['unofficial']=len(question_notmarked_official)
+    data_summary['total_invites']=len(Invites.query.filter_by(orgid=User.query.filter_by(userid = session.get('user_id')).first().organization).all())
+
+    print(len(questions_marked_official))
 
 
     return render_template('ModeratorDashboard.html', questions=questions,data_summary=data_summary,official=questions_marked_official,unofficial=question_notmarked_official,nav="Moderator Dashboard")
@@ -32,10 +37,9 @@ def moderator_dashboard():
 @role_required('moderator')
 def question_moderation():
     questions=Questions.query.filter_by(orgid=User.query.filter_by(userid = session.get('user_id')).first().organization).order_by(asc(Questions.date)).all()
-    new_questions=[]
-    for question in questions:
-        new_questions.append(question.serializer())
-    return render_template('moderate_questions.html',questions=new_questions,nav="Moderate Questions")
+    question_notmarked_official = [question.serializer() for question in questions if question.official_answer == ""]
+    print(question_notmarked_official)
+    return render_template('moderate_questions.html',questions=question_notmarked_official,nav="Moderate Questions")
 
 
 @moderator_bpt.route('/mark_as_official/<int:answerid>', methods=['get'])

@@ -165,4 +165,4 @@ def user_dashboard():
 def myquestions():
     questions=Questions.query.filter_by(userid=session['user_id']).order_by(Questions.date.desc()).all()
     questions=[question.serializer() for question in questions]
-    return render_template('my_questions.html',questions=questions,nav="My Questions")
+    return render_template('my_questions.html',questions=questions,nav="My Questions",role=User.query.filter_by(userid=session['user_id']).first().role)

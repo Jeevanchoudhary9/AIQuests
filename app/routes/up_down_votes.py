@@ -41,7 +41,7 @@ def upvote_answer(answer_id):
     
     vote = Votes.query.filter_by(answerid=answer_id, userid=session.get('user_id')).first()
     if vote:
-        if vote.vote == "1":
+        if vote.vote == 1:
             print('upvote')
             return jsonify({"success": False, "message": "You have already voted"}), 403
         else:
@@ -76,7 +76,7 @@ def downvoteans(answer_id):
     
     vote = Votes.query.filter_by(answerid=answer_id, userid=session.get('user_id')).first()
     if vote:
-        if vote.vote == "-1":
+        if vote.vote == -1:
             return jsonify({"success": False, "message": "You have already voted"}), 403
         else:
             vote.vote = -1

@@ -18,20 +18,6 @@ from flask import Flask, send_file, abort
 other_bpt = Blueprint('other', __name__)
 
 
-UPLOAD_FOLDER = os.path.join('upload')
-
-@other_bpt.route('/view/<filename>')
-def view_file(filename):
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
-    return send_file(file_path, as_attachment=False)  # Opens in browser
-
-
-
-@other_bpt.route('/uploads/<path:filename>')
-def serve_uploaded_file(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
-
-
 @other_bpt.route('/image/<int:id>')
 def get_image(id):
     image = Organizations.query.get(id)
@@ -131,42 +117,72 @@ def plus_one(question_id):
 #             return redirect(url_for('questions'))
 
 
+# Configure upload folder
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'upload')
 
+# Allowed file extensions
+ALLOWED_EXTENSIONS = {'pdf'}
+
+
+# Utility function to validate file extensions
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+# Route to view file in the browser
+@other_bpt.route('/view/<filename>')
+def view_file(filename):
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    if os.path.exists(file_path):
+        return send_file(file_path, as_attachment=False)
+    flash('File not found', 'danger')
+    return redirect(url_for('user.login'))
+
+
+# Route to serve uploaded files
+@other_bpt.route('/uploads/<path:filename>')
+def serve_uploaded_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
+
+# Route to handle file upload
 @other_bpt.route('/upload', methods=['POST'])
 def upload_file():
-    docdesc = request.form.get('docdesc') if request.form.get('docdesc') else ''
+    # Retrieve form data
+    docdesc = request.form.get('docdesc', '')  # Default to an empty string if not provided
     orgid = session.get('org_id')
 
-    # Check if a file is included
+    # Check if a file was submitted
     if 'file' not in request.files:
-        flash('No file part in the form')
+        flash('No file part in the form', 'danger')
         return redirect(request.url)
 
     file = request.files['file']
-    # Name of the file uploaded
-    docname = file.filename
 
-    # If no file is selected
+    # Check for empty file submission
     if file.filename == '':
-        flash('No file selected')
+        flash('No file selected', 'danger')
         return redirect(request.url)
 
     # Validate and process the file
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         file_path = os.path.join(UPLOAD_FOLDER, filename)
-        
-        # Save the file to the local storage
+
         try:
+            # Ensure the upload folder exists
             os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+            
+            # Save file to the upload folder
             file.save(file_path)
         except Exception as e:
-            flash(f"Failed to save the file: {e}")
+            flash(f"Failed to save the file: {e}", 'danger')
             return redirect(url_for('user.login'))
 
         # Save file details to the database
         new_doc = Docs(
-            docname=docname,
+            docname=file.filename,
             docdesc=docdesc,
             docpath=file_path,
             orgid=orgid
@@ -174,17 +190,18 @@ def upload_file():
         try:
             db.session.add(new_doc)
             db.session.commit()
-            flash(['File successfully uploaded and details saved!', 'success'])
+            flash('File successfully uploaded and details saved!', 'success')
 
+            # Process the uploaded PDF file
             pdf_to_documents(file_path, orgid)
-            return redirect(url_for('user.login'))  # Replace with the desired redirect
+            return redirect(url_for('user.login'))
         except Exception as e:
-            flash(f"Failed to save file details to database: {e}")
+            flash(f"Failed to save file details to database: {e}", 'danger')
             db.session.rollback()
-            return redirect(request.url)
+            return redirect(url_for('user.login'))
     else:
-        flash('Invalid file format. Only PDF files are allowed.')
-        return redirect(request.url)
+        flash('Invalid file format. Only PDF files are allowed.', 'danger')
+        return redirect(url_for('user.login'))
 
 
 @other_bpt.route('/dashboard/admin')

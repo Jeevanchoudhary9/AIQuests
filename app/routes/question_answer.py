@@ -1,6 +1,6 @@
 import datetime
 from flask import render_template, request, redirect, url_for, flash, session
-from ..models import db, User, Questions, Plus_ones, Answers, Votes, Keywords
+from ..models import db, User, Questions, Plus_ones, Answers, Votes, Keywords,Organizations
 import random
 from langchain_community.llms.ollama import Ollama
 import humanize
@@ -23,7 +23,9 @@ QA_bpt = Blueprint('question_and_answer', __name__)
 executor = ThreadPoolExecutor(max_workers=5)
 
 @QA_bpt.route('/questions', methods=['GET', 'POST', 'DELETE', 'PUT'])
-def questions(filter="date"):
+def questions():
+
+    filter=request.args.get('filter','date')
 
     if request.method=='POST': # Add the question
         question=request.form.get('question')
@@ -59,15 +61,28 @@ def questions(filter="date"):
 
     else: # Get all questions
         question_whole=[]
+
         if filter=="date":
+            print("date")
             questions = Questions.query.order_by(Questions.date.desc()).all()
         elif filter=="plus_one":
+            print("plus_one")
             questions = Questions.query.order_by(Questions.plus_one.desc()).all()
-        elif filter=="":
+        elif filter=="plus_one_date":
             questions = Questions.query.order_by(Questions.date.desc(), Questions.plus_one.asc()).all()
+        else:
+            questions = Questions.query.all()
+
         for question in questions:
             question_whole.append(question.serializer())
-        return render_template('questions.html',questions=question_whole,nav="All Questions",role=User.query.filter_by(userid=session['user_id']).first().role)
+        
+        if User.query.filter_by(userid=session.get('user_id')).first():
+            role=User.query.filter_by(userid=session.get('user_id')).first().role
+        elif Organizations.query.filter_by(orgid=session.get('org_id')).first():
+            role='organization'
+        else:
+            role="user"
+        return render_template('questions.html',questions=question_whole,nav="All Questions",role=role,filter=filter)
     
     
 @QA_bpt.route('/answer_delete/<int:answerid>', methods=['GET'])
@@ -206,15 +221,15 @@ def ask_question():
         flash(['Your question is being posted in the background!', 'success'])
         return redirect(url_for('question_and_answer.questions'))
 
-    return render_template('AskQuestion.html', nav="Ask Question")
+    return render_template('AskQuestion.html', nav="Ask Question", role=User.query.filter_by(userid=session['user_id']).first().role)
 
 
 @QA_bpt.route('/questions_delete/<int:question_id>',methods=['GET'])
-@role_required('user')
+@role_required(['user','moderator','organization'])
 def questions_delete(question_id):
     user=User.query.filter_by(userid=session['user_id']).first()
     question=Questions.query.filter_by(questionid=question_id).first()
-    if question.userid!=user.userid:
+    if question.userid!=user.userid and user.role!='moderator' and user.role!='organization':
         flash('You are not authorized to delete this question')
         return redirect(url_for('user.myquestions'))
     answers=Answers.query.filter_by(questionid=question_id).all()
@@ -229,24 +244,29 @@ def questions_delete(question_id):
     db.session.delete(question)
     db.session.commit()
     flash(['Question deleted successfully','success'])
+    if user.role=='moderator' or user.role=='organization':
+        return redirect(url_for('moderator.moderator_dashboard'))
     return redirect(url_for('user.myquestions'))
 
-
 def ask_question_function(app, question_id, org_id, title, body, tags):
-    print("Thread started")
     try:
         # Explicitly set the app context within the thread
         with app.app_context():
 
-            hybrid_context = " ".join(hybrid_search(f"{title} {body}", org_id))
-            simple_context = " ".join([hit["answer"] for hit in search_answer(f"{title} {body}", org_id)])
+            hybrid_context = hybrid_search(f"{title} {body}", org_id)
+            simple_context = search_answer(f"{title} {body}", org_id)
+            prompt = f"Answer the Question: {title} {body} from tag {' '.join(tags)} using existing context and knowledge "
 
-            print(simple_context)
-
+            if hybrid_context:
+                prompt += f"*{hybrid_context}*"
+            if not simple_context:
+                prompt += f" and *{simple_context}*"
+            
+            # Prompt for AI response
             prompt = ChatPromptTemplate.from_messages(
                 [
                     ("system", "You are a helpful assistant. Please respond to user queries."),
-                    ("user", f"Answer the Question: {title} {body} from tag {' '.join(tags)} using existing context and knowledge {hybrid_context} {simple_context}"), 
+                    ("user", prompt), 
                 ]
             )
             

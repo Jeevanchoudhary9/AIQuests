@@ -64,12 +64,15 @@ def organization_dashboard():
     # top 5 user having role user and moderator
     top_5_user = Invites.query.filter(Invites.registered == True).order_by(Invites.date.desc()).limit(5).all()
     top_5_moderator = Invites.query.filter(Invites.registered == False).order_by(Invites.date.desc()).limit(5).all()
+    print(top_5_user, top_5_moderator)
 
     for invite in top_5_user:
         all_invites.append(invite.serializer())
         
     for invite in top_5_moderator:
         all_invites.append(invite.serializer())
+
+    print(all_invites)
 
     total_users=User.query.filter_by(organization=session['org_id']).count()
     user = User.query.filter_by(organization=session['org_id']).all()
@@ -83,7 +86,7 @@ def organization_dashboard():
                             'OrganizationDashboard.html',
                             data=generate_demo_data(),
                             questions=questions,
-                            invites=[] if len(all_invites) else all_invites,
+                            invites=all_invites,
                             nav="Organization Dashboard",
                             content=content,
                             pdf_files=pdf_files_serialized
