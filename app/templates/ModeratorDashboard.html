@@ -1,112 +1,229 @@
-{% extends "layout.html" %}
-
-{% block style %}
-  <style>
-    .registercontainer {
-      padding-top: 50px; /* Margin from top */
-    }
-  </style>
-{% endblock %}
-{% block content %}
+{% extends "layout.html" %} {% block style %}
+<style>
+  .registercontainer {
+    padding-top: 50px; /* Margin from top */
+  }
+</style>
+{% endblock %} {% block content %}
 <div class="bg-gradient-to-b from-blue-50 to-white">
-<div class="max-w-7xl mx-auto px-4 py-8">
-  <h1 class="text-3xl font-bold mb-8">Moderator Dashboard</h1>
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Moderator Dashboard</h1>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <div class="bg-white p-6 rounded-lg shadow-md">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold">Total Users</h3>
-        <svg class="h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-          stroke="currentColor">
-          <path d="M17 20h5v-1a3 3 0 00-3-3h-2a3 3 0 00-3 3v1h5z" />
-        </svg>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold">Total Users</h3>
+          <img
+            src="{{ url_for('static', filename='img/users.png') }}"
+            alt="Total Users"
+            class="h-6 w-6 inline-block align-middle"
+          />
+        </div>
+        <p class="text-3xl font-bold">{{data_summary.users}}</p>
+        <p class="text-sm text-gray-500 mt-2">+12% from last month</p>
       </div>
-      <p class="text-3xl font-bold">1,234</p>
-      <p class="text-sm text-gray-500 mt-2">+12% from last month</p>
+
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold">Questions</h3>
+          <img
+            src="{{ url_for('static', filename='img/ask.png') }}"
+            alt="Questions"
+            class="h-6 w-6 inline-block align-middle"
+          />
+        </div>
+        <p class="text-3xl font-bold">{{data_summary.questions}}</p>
+        <p class="text-sm text-gray-500 mt-2">+5% from last month</p>
+      </div>
+
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold">Answers</h3>
+          <img
+            src="{{ url_for('static', filename='img/answers.png') }}"
+            alt="Answers"
+            class="h-6 w-6 inline-block align-middle"
+          />
+        </div>
+        <p class="text-3xl font-bold">{{data_summary.answers}}</p>
+        <p class="text-sm text-gray-500 mt-2">+18% from last month</p>
+      </div>
+
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold">Reported Content</h3>
+          <img
+            src="{{ url_for('static', filename='img/reported.png') }}"
+            alt="Reported Content"
+            class="h-6 w-6 inline-block align-middle"
+          />
+        </div>
+        <p class="text-3xl font-bold">23 pending block</p>
+        <p class="text-sm text-gray-500 mt-2">Needs moderation</p>
+      </div>
     </div>
 
-    <div class="bg-white p-6 rounded-lg shadow-md">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold">Questions</h3>
-        <svg class="h-6 w-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-          stroke="currentColor">
-          <path d="M8 10h8M8 6h8M8 14h8m-4 2h2a2 2 0 110 4h-4a2 2 0 01-4-4h2" />
-        </svg>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold">Recent Questions Needing Moderation</h2>
+          <a
+            href="{{url_for('moderator.question_moderation')}}"
+            class="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200"
+          >
+            View all
+          </a>
+        </div>
+        <div class="space-y-4">
+          {% for question in unofficial[:5] %}
+          <div class="border-b pb-4 last:border-0">
+            <div class="flex items-center justify-between">
+              <a
+                href=" {{url_for('question_and_answer.questions_details', question_id=question.questionid) }}"
+                class="text-blue-600 hover:text-blue-800 font-semibold mb-2 block"
+              >
+                <h3 class="">{{ question.question_title }}</h3>
+              </a>
+              <div class="flex space-x-2">
+                <a
+                  href="{{url_for('question_and_answer.questions_delete', question_id=question.questionid) }}"
+                  class="px-3 py-1 text-sm bg-red-100 text-red-800 rounded-full hover:bg-red-200"
+                >
+                  Delete
+                </a>
+              </div>
+            </div>
+            <p class="text-sm text-gray-500">
+              Received {{ question.relative_time }} ago
+            </p>
+          </div>
+          {% endfor %}
+        </div>
       </div>
-      <p class="text-3xl font-bold">856</p>
-      <p class="text-sm text-gray-500 mt-2">+5% from last month</p>
-    </div>
 
-    <div class="bg-white p-6 rounded-lg shadow-md">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold">Answers</h3>
-        <svg class="h-6 w-6 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-          stroke="currentColor">
-          <path d="M8 6h8m-8 4h8M8 14h4m-4 2h2a2 2 0 100-4H6a2 2 0 100 4h2" />
-        </svg>
-      </div>
-      <p class="text-3xl font-bold">2,456</p>
-      <p class="text-sm text-gray-500 mt-2">+18% from last month</p>
-    </div>
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-bold mb-6">Answers Pending Verification</h2>
+        <div class="space-y-4">
+          <!-- charts started -->
+          <div
+            class="max-w-sm w-full bg-white rounded-lg shadow dark:bg-gray-800 p-4 md:p-6"
+          >
+            <!-- Donut Chart -->
+            <div class="py-6" id="donut-chart"></div>
 
-    <div class="bg-white p-6 rounded-lg shadow-md">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold">Reported Content</h3>
-        <svg class="h-6 w-6 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-          stroke="currentColor">
-          <path d="M12 9v2m0 4h.01m6.938-5.071a7.5 7.5 0 11-9.94 0" />
-        </svg>
-      </div>
-      <p class="text-3xl font-bold">23</p>
-      <p class="text-sm text-gray-500 mt-2">Needs moderation</p>
-    </div>
-  </div>
-
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-    <div class="bg-white p-6 rounded-lg shadow-md">
-      <h2 class="text-xl font-bold mb-6">Recent Questions Needing Moderation</h2>
-      <div class="space-y-4">
-        {% for question in questions %}
-        <div class="border-b pb-4 last:border-0">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="font-semibold">{{ question.title }}</h3>
-            <div class="flex space-x-2">
-              <button class="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full hover:bg-green-200">
-                Approve
-              </button>
-              <button class="px-3 py-1 text-sm bg-red-100 text-red-800 rounded-full hover:bg-red-200">
-                Remove
-              </button>
+            <div
+              class="grid grid-cols-1 items-center border-gray-200 border-t dark:border-gray-700 justify-between"
+            >
+              somethsisns
             </div>
           </div>
-          <p class="text-sm text-gray-500">Reported {{ question.reported_time }} ago</p>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
 
-    <div class="bg-white p-6 rounded-lg shadow-md">
-      <h2 class="text-xl font-bold mb-6">Answers Pending Verification</h2>
-      <div class="space-y-4">
-        {% for answer in answers %}
-        <div class="border-b pb-4 last:border-0">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="font-semibold">Answer to: {{ answer.question_title }}</h3>
-            <div class="flex space-x-2">
-              <button class="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200">
-                Mark Official
-              </button>
-              <button class="px-3 py-1 text-sm bg-gray-100 text-gray-800 rounded-full hover:bg-gray-200">
-                Skip
-              </button>
-            </div>
-          </div>
-          <p class="text-sm text-gray-500">Posted {{ answer.posted_time }} ago</p>
+          <!-- charts ended -->
         </div>
-        {% endfor %}
       </div>
     </div>
   </div>
 </div>
-</div>
+{% endblock %} {% block script %}
+<script>
+  const getChartOptions = () => {
+    return {
+      series: [35.1, 23.5, 2.4, 5.4],
+      colors: ["#1C64F2", "#16BDCA", "#FDBA8C", "#E74694"],
+      chart: {
+        height: 320,
+        width: "100%",
+        type: "donut",
+      },
+      stroke: {
+        colors: ["transparent"],
+        lineCap: "",
+      },
+      plotOptions: {
+        pie: {
+          donut: {
+            labels: {
+              show: true,
+              name: {
+                show: true,
+                fontFamily: "Inter, sans-serif",
+                offsetY: 20,
+              },
+              total: {
+                showAlways: true,
+                show: true,
+                label: "Unique visitors",
+                fontFamily: "Inter, sans-serif",
+                formatter: function (w) {
+                  const sum = w.globals.seriesTotals.reduce((a, b) => {
+                    return a + b;
+                  }, 0);
+                  return "$" + sum + "k";
+                },
+              },
+              value: {
+                show: true,
+                fontFamily: "Inter, sans-serif",
+                offsetY: -20,
+                formatter: function (value) {
+                  return value + "k";
+                },
+              },
+            },
+            size: "80%",
+          },
+        },
+      },
+      grid: {
+        padding: {
+          top: -2,
+        },
+      },
+      labels: ["Offical Marked", "Marking Pending"],
+      dataLabels: {
+        enabled: false,
+      },
+      legend: {
+        position: "bottom",
+        fontFamily: "Inter, sans-serif",
+      },
+      yaxis: {
+        labels: {
+          formatter: function (value) {
+            return value + "k";
+          },
+        },
+      },
+      xaxis: {
+        labels: {
+          formatter: function (value) {
+            return value + "k";
+          },
+        },
+        axisTicks: {
+          show: false,
+        },
+        axisBorder: {
+          show: false,
+        },
+      },
+    };
+  };
+
+  if (
+    document.getElementById("donut-chart") &&
+    typeof ApexCharts !== "undefined"
+  ) {
+    const chart = new ApexCharts(
+      document.getElementById("donut-chart"),
+      getChartOptions()
+    );
+    chart.render();
+
+    // Get all the checkboxes by their class name
+    const checkboxes = document.querySelectorAll(
+      '#devices input[type="checkbox"]'
+    );
+  }
+</script>
 {% endblock %}

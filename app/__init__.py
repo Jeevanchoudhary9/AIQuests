@@ -1,8 +1,65 @@
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from elasticsearch import Elasticsearch
+from sentence_transformers import SentenceTransformer
+from dotenv import load_dotenv
+
+load_dotenv()
 
 db = SQLAlchemy()
+embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+
+es = Elasticsearch(
+    cloud_id=os.getenv("ELASTIC_CLOUD_ID"),
+    basic_auth=(os.getenv("ELASTIC_USERNAME"), os.getenv("ELASTIC_PASSWORD"))
+)
+
+def create_doc_index(index_name):
+    # Define index mapping with dense_vector field and organisation_id
+    mapping = {
+        "mappings": {
+            "properties": {
+                "organisation_id": {"type": "keyword"},  # Add this
+                "text": {"type": "text"},
+                "embedding": {
+                    "type": "dense_vector",
+                    "dims": 384,
+                    "index": True,
+                    "similarity": "cosine"
+                }
+            }
+        }
+    }
+
+    if not es.indices.exists(index=index_name):
+        es.indices.create(index=index_name, body=mapping)
+        print(f"Index '{index_name}' created successfully.")
+    else:
+        print(f"Index '{index_name}' already exists.")
+
+def create_rag_index(index_name):
+    mapping = {
+        "mappings": {
+            "properties": {
+                "organisation_id": {"type": "keyword"},  # Filter for organizations
+                "question": {"type": "text"},           # Store questions
+                "answer": {"type": "text"},             # Store answers
+                "embedding": {
+                    "type": "dense_vector",
+                    "dims": 384,
+                    "index": True,
+                    "similarity": "cosine"
+                }
+            }
+        }
+    }
+
+    if not es.indices.exists(index=index_name):
+        es.indices.create(index=index_name, body=mapping)
+        print(f"Index '{index_name}' created.")
+    else:
+        print(f"Index '{index_name}' already exists.")
 
 def create_app():
     app = Flask(__name__)
@@ -34,5 +91,8 @@ def create_app():
     app.register_blueprint(votes_bpt,url_prefix='/')
     app.register_blueprint(QA_bpt,url_prefix='/')
     app.register_blueprint(other_bpt,url_prefix='/')
+
+    create_doc_index(os.getenv("DOC_INDEX_NAME"))
+    create_rag_index(os.getenv("QA_INDEX_NAME"))
 
     return app

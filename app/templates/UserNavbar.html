@@ -89,6 +89,20 @@
                     >Documents</a
                   >
                 </li>
+                {% elif nav=='Moderator Dashboard' %}
+                <li>
+                  <a href="{{ url_for('question_and_answer.questions')}}"
+                    >All Questions</a
+                  >
+                </li>
+                <li>
+                  <a href="{{ url_for('user.myquestions')}}">Questions</a>
+                </li>
+                <li>
+                  <a href="{{ url_for('question_and_answer.ask_question')}}"
+                    >Ask Questions</a
+                  >
+                </li>
                 {% elif nav=='User Manager' %}
                 <li>
                   <a href="{{ url_for('organization.organization_dashboard') }}"
@@ -141,7 +155,8 @@
             </a>
             {% elif nav=='User Dashboard' or nav=='Ask Question' or
             nav=='Organization Dashboard' or nav=='User Manager' or nav=='All
-            Questions' or nav=='Question' or nav.startswith('Question ') %}
+            Questions' or nav=='Question' or nav.startswith('Question ') or
+            nav=='Moderator Dashboard' %}
             <a
               href="{{ url_for('other.logout') }}"
               class="signin px-4 py-2 text-gray-700 hover:text-gray-900"
