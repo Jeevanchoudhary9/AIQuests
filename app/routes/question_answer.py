@@ -304,7 +304,7 @@ def ask_question_function(app, question_id, org_id, title, body, tags):
             new_answer = Answers(
                 answer=response,
                 questionid=question_id,
-                userid=2,  # Replace with dynamic user ID if necessary
+                userid=1,
                 upvotes=0,
                 downvotes=0,
                 marked_as_official=False,
