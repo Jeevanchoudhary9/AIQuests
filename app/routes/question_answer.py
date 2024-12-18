@@ -179,6 +179,31 @@ def questions_details(question_id):
         return render_template('QuestionDetails.html',question=questions.serializer(),relative_time=relative_time,user_question=user_question,answers=answers_list,nav="Question {}".format(question_id),role=User.query.filter_by(userid=session['user_id']).first().role)
 
 
+@QA_bpt.route('/questions_delete/<int:question_id>',methods=['GET'])
+@role_required(['user','moderator','organization'])
+def questions_delete(question_id):
+    user=User.query.filter_by(userid=session['user_id']).first()
+    question=Questions.query.filter_by(questionid=question_id).first()
+    if question.userid!=user.userid and user.role!='moderator' and user.role!='organization':
+        flash('You are not authorized to delete this question')
+        return redirect(url_for('user.myquestions'))
+    answers=Answers.query.filter_by(questionid=question_id).all()
+    plus_ones=Plus_ones.query.filter_by(questionid=question_id).all()
+    votes=Votes.query.filter_by(questionid=question_id).all()
+    for answer in answers:
+        db.session.delete(answer)
+    for plus_one in plus_ones:
+        db.session.delete(plus_one)
+    for vote in votes:
+        db.session.delete(vote)
+    db.session.delete(question)
+    db.session.commit()
+    flash(['Question deleted successfully','success'])
+    if user.role=='moderator' or user.role=='organization':
+        return redirect(url_for('moderator.moderator_dashboard'))
+    return redirect(url_for('user.myquestions'))
+
+
 @QA_bpt.route('/ask_question', methods=["GET", "POST"])
 @role_required('user')
 def ask_question():
@@ -229,38 +254,6 @@ def ask_question():
     return render_template('AskQuestion.html', nav="Ask Question", role=User.query.filter_by(userid=session['user_id']).first().role)
 
 
-@QA_bpt.route('/questions_delete/<int:question_id>',methods=['GET'])
-@role_required(['user','moderator','organization'])
-def questions_delete(question_id):
-    user=User.query.filter_by(userid=session['user_id']).first()
-    question=Questions.query.filter_by(questionid=question_id).first()
-    if question.userid!=user.userid and user.role!='moderator' and user.role!='organization':
-        flash('You are not authorized to delete this question')
-        return redirect(url_for('user.myquestions'))
-    answers=Answers.query.filter_by(questionid=question_id).all()
-    plus_ones=Plus_ones.query.filter_by(questionid=question_id).all()
-    votes=Votes.query.filter_by(questionid=question_id).all()
-    for answer in answers:
-        db.session.delete(answer)
-    for plus_one in plus_ones:
-        db.session.delete(plus_one)
-    for vote in votes:
-        db.session.delete(vote)
-    db.session.delete(question)
-    db.session.commit()
-    flash(['Question deleted successfully','success'])
-    if user.role=='moderator' or user.role=='organization':
-        return redirect(url_for('moderator.moderator_dashboard'))
-    return redirect(url_for('user.myquestions'))
-
-
-# from langchain_community.llms.ollama import Ollama
-# from langchain_core.prompts import ChatPromptTemplate
-# from langchain_core.output_parsers import StrOutputParser
-# import datetime
-# from ..utils.ai_part import is_abusive, keybertmodel, lemmatize_text
-# from ..models import db, Answers, Questions, Keywords
-
 def ask_question_function(app, question_id, org_id, title, body, tags):
     try:
         with app.app_context():
@@ -274,17 +267,17 @@ def ask_question_function(app, question_id, org_id, title, body, tags):
                 wiki_context = wiki_tool.run(title + " " + body)
 
             # Build prompt based on context availability
-            base_prompt = f"Answer the Question: {title} {body} using existing context and knowledge."
-            if hybrid_context and simple_context:
-                base_prompt += f" Context: {hybrid_context} Context from Q&A pairs: {simple_context}"
-            elif hybrid_context:
-                base_prompt += f" Context: {hybrid_context}"
-            elif simple_context:
-                base_prompt += f" Context from Q&A pairs: {simple_context}"
-            elif wiki_context:
-                base_prompt += f" Additional context from Wikipedia: {wiki_context}"
-            else:
-                base_prompt += " No existing context found. Use your general knowledge to answer."
+            base_prompt = f"Answer the Question: {title} {body} using existing context and knowledge.\n"
+
+            if hybrid_context:
+                base_prompt += f"Hybrid Search Context:\n{hybrid_context}\n"
+            if simple_context:
+                base_prompt += f"QA Pair Context:\n{simple_context}\n"
+            if wiki_context:
+                base_prompt += f"Wikipedia Context:\n{wiki_context}\n"
+
+            if not (hybrid_context or simple_context or wiki_context):
+                base_prompt += "No context found. Use general knowledge to answer."
 
             # Define the prompt template
             prompt = ChatPromptTemplate.from_messages([
@@ -311,7 +304,7 @@ def ask_question_function(app, question_id, org_id, title, body, tags):
             new_answer = Answers(
                 answer=response,
                 questionid=question_id,
-                userid=2,  # Assuming '2' is the AI's user ID
+                userid=2,  # Replace with dynamic user ID if necessary
                 upvotes=0,
                 downvotes=0,
                 marked_as_official=False,
@@ -335,11 +328,13 @@ def ask_question_function(app, question_id, org_id, title, body, tags):
             db.session.commit()
             print("AI successfully answered and saved the response.")
 
+            # Notification handling (ensure notifications is initialized)
+            notifications = []
+            notifications.append({
+                "title": "AI Response",
+                "body": "Your question has been answered by AI.",
+                "redirect_url": '/questions'
+            })
+
     except Exception as e:
         print("Error in ask_question_function:", str(e))
-    finally:
-        notifications.append({
-            "title": "AI Response",
-            "body": "Your question has been answered by AI.",
-            "redirect_url": '/questions'
-        })

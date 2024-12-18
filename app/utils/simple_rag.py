@@ -1,5 +1,7 @@
 import os
 from .. import es, embedding_model
+from langchain_community.llms.ollama import Ollama
+from langchain_core.prompts import ChatPromptTemplate
 
 index_name = os.getenv("QA_INDEX_NAME")
 
