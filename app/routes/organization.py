@@ -7,6 +7,8 @@ import string
 from ..utils.role_check import role_required
 from ..utils.other import generate_demo_data
 from flask import Blueprint
+import threading
+from ..utils.email_notification import send_email
 
 organization_bpt = Blueprint('organization', __name__)
 
@@ -101,7 +103,7 @@ def organization_dashboard():
 def inviteUser():
     email = request.form.get('email')
     role = request.form.get('role')
-    orgid = 1
+    orgid = session.get('org_id')
     date = datetime.datetime.now()
 
     if email is None or role is None:
@@ -134,8 +136,8 @@ def inviteUser():
     body = render_template('emailinvite.html',email=email,code=code,role=role,register_url=register_url,browser_url=browser_url)
 
     # Start a new thread to send the email
-    # thread = threading.Thread(target=send_email, args=(email, subject, body))
-    # thread.start()
+    thread = threading.Thread(target=send_email, args=(email, subject, body))
+    thread.start()
     flash(['Mail sent successfully','success'])
 
     return redirect(url_for('organization.userManager'))
@@ -161,7 +163,8 @@ def invitedmail(email=None,code=None,role=None):
 @organization_bpt.route('/UserManager')
 @role_required('organization')
 def userManager():
-    invites = Invites.query.filter_by(orgid=session['org_id']).all()
+    invites = Invites.query.filter_by(orgid=session.get('org_id')).all()
+    print(session.get('org_id'))
     print(datetime.datetime.now())
     characters = string.ascii_uppercase + string.digits
     code = ''.join(random.choice(characters) for _ in range(16))

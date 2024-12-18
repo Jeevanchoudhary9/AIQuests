@@ -190,7 +190,7 @@ def upload_file():
         try:
             db.session.add(new_doc)
             db.session.commit()
-            flash('File successfully uploaded and details saved!', 'success')
+            flash(['File successfully uploaded and details saved!', 'success'])
 
             # Process the uploaded PDF file
             pdf_to_documents(file_path, orgid)
