@@ -1,5 +1,7 @@
 # AIQuest
 
+**Secured 3rd place at IIT Bombay Techfest's AIQuest Hackathon judged by Marsh McLennan panel**
+
 **AIQuest** is an advanced internal knowledge-sharing platform, inspired by Stack Overflow, designed to revolutionize collaboration and productivity within organizations. Leveraging **Retrieval-Augmented Generation (RAG)** with the **Llama AI model**, AIQuest facilitates intelligent, contextual responses to user queries by combining the power of AI with human expertise.
 
 ---
