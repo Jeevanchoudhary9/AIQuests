@@ -66,28 +66,50 @@ def questions():
 
     else: # Get all questions
         question_whole=[]
+        if session.get('org_id'):
+            if filter=="date":
+                print("date")
+                questions = Questions.query.filter_by(orgid=session.get('org_id')).order_by(Questions.date.desc()).all()
+            elif filter=="plus_one":
+                print("plus_one")
+                questions = Questions.query.filter_by(orgid=session.get('org_id')).order_by(Questions.plus_one.desc()).all()
+            elif filter=="plus_one_date":
+                questions = Questions.query.filter_by(orgid=session.get('org_id')).order_by(Questions.date.desc(), Questions.plus_one.asc()).all()
+            else:
+                questions = Questions.query.filter_by(orgid=session.get('org_id')).all()
 
-        if filter=="date":
-            print("date")
-            questions = Questions.query.order_by(Questions.date.desc()).all()
-        elif filter=="plus_one":
-            print("plus_one")
-            questions = Questions.query.order_by(Questions.plus_one.desc()).all()
-        elif filter=="plus_one_date":
-            questions = Questions.query.order_by(Questions.date.desc(), Questions.plus_one.asc()).all()
+            for question in questions:
+                question_whole.append(question.serializer())
+            
+            if User.query.filter_by(userid=session.get('user_id')).first():
+                role=User.query.filter_by(userid=session.get('user_id')).first().role
+            elif Organizations.query.filter_by(orgid=session.get('org_id')).first():
+                role='organization'
+            else:
+                role="user"
+            return render_template('questions.html',questions=question_whole,nav="All Questions",role=role,filter=filter)
         else:
-            questions = Questions.query.all()
+            if filter=="date":
+                print("date")
+                questions = Questions.query.filter_by(orgid=User.query.filter_by(userid=session.get('user_id')).first().organization).order_by(Questions.date.desc()).all()
+            elif filter=="plus_one":
+                print("plus_one")
+                questions = Questions.query.filter_by(orgid=User.query.filter_by(userid=session.get('user_id')).first().organization).order_by(Questions.plus_one.desc()).all()
+            elif filter=="plus_one_date":
+                questions = Questions.query.filter_by(orgid=User.query.filter_by(userid=session.get('user_id')).first().organization).order_by(Questions.date.desc(), Questions.plus_one.asc()).all()
+            else:
+                questions = Questions.query.filter_by(orgid=User.query.filter_by(userid=session.get('user_id')).first().organization).all()
 
-        for question in questions:
-            question_whole.append(question.serializer())
-        
-        if User.query.filter_by(userid=session.get('user_id')).first():
-            role=User.query.filter_by(userid=session.get('user_id')).first().role
-        elif Organizations.query.filter_by(orgid=session.get('org_id')).first():
-            role='organization'
-        else:
-            role="user"
-        return render_template('questions.html',questions=question_whole,nav="All Questions",role=role,filter=filter)
+            for question in questions:
+                question_whole.append(question.serializer())
+            
+            if User.query.filter_by(userid=session.get('user_id')).first():
+                role=User.query.filter_by(userid=session.get('user_id')).first().role
+            elif Organizations.query.filter_by(orgid=session.get('org_id')).first():
+                role='organization'
+            else:
+                role="user"
+            return render_template('questions.html',questions=question_whole,nav="All Questions",role=role,filter=filter)
     
     
 @QA_bpt.route('/answer_delete/<int:answerid>', methods=['GET'])
@@ -269,11 +291,17 @@ def ask_question_function(app, question_id, org_id, title, body, tags):
             # Build prompt based on context availability
             base_prompt = f"Answer the Question: {title} {body} using existing context and knowledge.\n"
 
-            if hybrid_context:
-                base_prompt += f"Hybrid Search Context:\n{hybrid_context}\n"
-            if simple_context:
+            print(hybrid_context)
+            print(simple_context)
+            print(wiki_context)
+
+            if hybrid_context and simple_context:
+                base_prompt += f"Hybrid Search Context:\n{hybrid_context}\n QA Pair Context:\n{simple_context}\n"
+            elif simple_context:
                 base_prompt += f"QA Pair Context:\n{simple_context}\n"
-            if wiki_context:
+            elif hybrid_context:
+                base_prompt += f"Hybrid Search Context:\n{hybrid_context}\n"
+            elif wiki_context:
                 base_prompt += f"Wikipedia Context:\n{wiki_context}\n"
 
             if not (hybrid_context or simple_context or wiki_context):
@@ -304,7 +332,7 @@ def ask_question_function(app, question_id, org_id, title, body, tags):
             new_answer = Answers(
                 answer=response,
                 questionid=question_id,
-                userid=2,  # Replace with dynamic user ID if necessary
+                userid=1,
                 upvotes=0,
                 downvotes=0,
                 marked_as_official=False,

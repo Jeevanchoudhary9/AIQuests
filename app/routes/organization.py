@@ -7,6 +7,8 @@ import string
 from ..utils.role_check import role_required
 from ..utils.other import generate_demo_data
 from flask import Blueprint
+import threading
+from ..utils.email_notification import send_email
 
 organization_bpt = Blueprint('organization', __name__)
 
@@ -62,17 +64,19 @@ def organization_dashboard():
     all_invites = []
 
     # top 5 user having role user and moderator
-    top_5_user = Invites.query.filter(Invites.registered == True).order_by(Invites.date.desc()).limit(5).all()
-    top_5_moderator = Invites.query.filter(Invites.registered == False).order_by(Invites.date.desc()).limit(5).all()
+    top_5_user = Invites.query.filter(Invites.registered == True and Invites.orgid == session.get('org_id')).order_by(Invites.date.desc()).limit(5).all()
+    top_5_moderator = Invites.query.filter(Invites.registered == False and Invites.orgid == session.get('org_id')).order_by(Invites.date.desc()).limit(5).all()
     print(top_5_user, top_5_moderator)
 
     for invite in top_5_user:
-        all_invites.append(invite.serializer())
+        if invite.orgid == session.get('org_id'):
+            all_invites.append(invite.serializer())
         
     for invite in top_5_moderator:
-        all_invites.append(invite.serializer())
+        if invite.orgid == session.get('org_id'):
+            all_invites.append(invite.serializer())
 
-    print(all_invites)
+    total_invites=len(all_invites)
 
     total_users=User.query.filter_by(organization=session['org_id']).count()
     user = User.query.filter_by(organization=session['org_id']).all()
@@ -89,7 +93,8 @@ def organization_dashboard():
                             invites=all_invites,
                             nav="Organization Dashboard",
                             content=content,
-                            pdf_files=pdf_files_serialized
+                            pdf_files=pdf_files_serialized,
+                            total_invites=total_invites
                         )
 
 
@@ -98,7 +103,7 @@ def organization_dashboard():
 def inviteUser():
     email = request.form.get('email')
     role = request.form.get('role')
-    orgid = 1
+    orgid = session.get('org_id')
     date = datetime.datetime.now()
 
     if email is None or role is None:
@@ -131,8 +136,8 @@ def inviteUser():
     body = render_template('emailinvite.html',email=email,code=code,role=role,register_url=register_url,browser_url=browser_url)
 
     # Start a new thread to send the email
-    # thread = threading.Thread(target=send_email, args=(email, subject, body))
-    # thread.start()
+    thread = threading.Thread(target=send_email, args=(email, subject, body))
+    thread.start()
     flash(['Mail sent successfully','success'])
 
     return redirect(url_for('organization.userManager'))
@@ -158,7 +163,8 @@ def invitedmail(email=None,code=None,role=None):
 @organization_bpt.route('/UserManager')
 @role_required('organization')
 def userManager():
-    invites = Invites.query.all()
+    invites = Invites.query.filter_by(orgid=session.get('org_id')).all()
+    print(session.get('org_id'))
     print(datetime.datetime.now())
     characters = string.ascii_uppercase + string.digits
     code = ''.join(random.choice(characters) for _ in range(16))

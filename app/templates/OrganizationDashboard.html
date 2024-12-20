@@ -23,7 +23,7 @@
         />
       </div>
       <p class="text-3xl font-bold">{{content.total_users}}</p>
-      <p class="text-sm text-gray-500 mt-2">+100% from last month</p>
+      <p class="text-sm text-gray-500 mt-2">Total Users in Organisation</p>
     </div>
 
     <div class="bg-white p-6 rounded-lg shadow-md">
@@ -36,7 +36,7 @@
         />
       </div>
       <p class="text-3xl font-bold">{{content.total_questions}}</p>
-      <p class="text-sm text-gray-500 mt-2">+5% from last month</p>
+      <p class="text-sm text-gray-500 mt-2">Total Questions Asked</p>
     </div>
 
     <div class="bg-white p-6 rounded-lg shadow-md">
@@ -49,20 +49,20 @@
         />
       </div>
       <p class="text-3xl font-bold">{{content.total_answers}}</p>
-      <p class="text-sm text-gray-500 mt-2">+18% from last month</p>
+      <p class="text-sm text-gray-500 mt-2">Total Answers Given</p>
     </div>
 
     <div class="bg-white p-6 rounded-lg shadow-md">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold">Reported Content</h3>
+        <h3 class="text-lg font-semibold">Invited Users</h3>
         <img
           src="{{ url_for('static', filename='img/reported.png') }}"
           alt="Reported Content"
           class="h-11 w-11 inline-block align-middle"
         />
       </div>
-      <p class="text-3xl font-bold">23</p>
-      <p class="text-sm text-gray-500 mt-2">Needs moderation</p>
+      <p class="text-3xl font-bold">{{total_invites}}</p>
+      <p class="text-sm text-gray-500 mt-2">Total Invited Users</p>
     </div>
   </div>
 

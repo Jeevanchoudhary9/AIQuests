@@ -4,6 +4,7 @@ from datetime import timedelta
 from ..models import User, Questions, Answers, Keywords
 from sqlalchemy import func
 from collections import defaultdict
+from flask import session
 
 def generate_demo_data():
     # Generate sample time-series data for the past 10 days
@@ -12,7 +13,7 @@ def generate_demo_data():
     # Trending tags: Fetch the top 5 keywords ordered by their count
     trending_tags = [
         {'name': tag.keyword, 'count': tag.count}
-        for tag in Keywords.query.order_by(Keywords.count.desc()).limit(5).all()
+        for tag in Keywords.query.filter_by(organization=session.get('org_id')).order_by(Keywords.count.desc()).limit(5).all()
     ]
 
     # Time-series data: Initialize dictionaries for questions and answers
@@ -21,7 +22,7 @@ def generate_demo_data():
 
     # Count questions per day using GROUP BY
     question_counts = (
-        Questions.query.with_entities(func.date(Questions.date).label('q_date'), func.count(Questions.questionid))
+        Questions.query.filter_by(orgid=session.get('org_id')).with_entities(func.date(Questions.date).label('q_date'), func.count(Questions.questionid))
         .group_by(func.date(Questions.date))
         .all()
     )
@@ -29,11 +30,22 @@ def generate_demo_data():
         questions_per_day[q_date] = count
 
     # Count answers per day using GROUP BY
+    
+    # Subquery to fetch question IDs for the specific orgid
+    question_ids_subquery = Questions.query.filter_by(orgid=session.get('org_id')).with_entities(Questions.questionid).subquery()
+
+    # Main query to count answers grouped by date where question IDs match
     answer_counts = (
-        Answers.query.with_entities(func.date(Answers.date).label('a_date'), func.count(Answers.answerid))
-        .group_by(func.date(Answers.date))
+        Answers.query
+        .filter(Answers.questionid.in_(question_ids_subquery))  # Filter answers matching question IDs
+        .with_entities(
+            func.date(Answers.date).label('a_date'),  # Extract date
+            func.count(Answers.answerid).label('answer_count')  # Count answers
+        )
+        .group_by(func.date(Answers.date))  # Group by date
         .all()
-    )
+    )   
+    print(answer_counts)
     for a_date, count in answer_counts:
         answers_per_day[a_date] = count
 
